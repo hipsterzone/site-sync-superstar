@@ -279,8 +279,25 @@ body.eden-body #root {
     radial-gradient(circle at 0 100%, hsl(var(--eden-bg-sw)) 0%, transparent 60%),
     hsl(var(--eden-night));
 
+  /* Make the entire site background feel "alive" without heavy repaints */
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  animation: edenBgShift 62s ease-in-out infinite alternate;
+
   /* CRITICAL: keep it behind content, but never behind body/#root */
   z-index: 0;
+}
+
+@keyframes edenBgShift {
+  0% {
+    background-position: 0% 45%;
+  }
+  50% {
+    background-position: 55% 55%;
+  }
+  100% {
+    background-position: 100% 45%;
+  }
 }
 
 .hero-aurora {
@@ -2308,6 +2325,7 @@ body.eden-body #root {
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  #eden-hero-canvas,
   .hero-aurora,
   .hero-blob,
   .eden-window-shape,
@@ -2315,7 +2333,9 @@ body.eden-body #root {
   .orb-ring,
   .orb-float-tag,
   .hero-title span,
-  .eden-led {
+  .eden-led,
+  .eden-led::before,
+  .eden-led::after {
     animation: none !important;
   }
 }
@@ -2346,35 +2366,111 @@ body.eden-lock {
   overflow: hidden;
 }
 
-/* LED bianco/giallo (intensità media) — 1:1 nuovo_1-2.html */
+/* LED bianco/giallo (intensità media) — layer + "schiera" */
 .eden-led {
   position: fixed;
   inset: -20%;
   pointer-events: none;
-  z-index: -1;
+
+  /* Put it in the correct background stack: visible, but under .page (z-index: 1) */
+  z-index: 0;
+
   mix-blend-mode: screen;
-  opacity: 0.55;
+  opacity: 0.42;
+
+  /* Base glow (soft, non-invasive) */
   background:
-    radial-gradient(circle at 18% 18%, hsl(0 0% 100% / 0.18) 0%, transparent 52%),
-    radial-gradient(circle at 78% 28%, hsl(40 100% 85% / 0.22) 0%, transparent 55%),
-    radial-gradient(circle at 42% 82%, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
-    radial-gradient(circle at 88% 88%, hsl(38 100% 74% / 0.18) 0%, transparent 60%);
+    radial-gradient(circle at 18% 18%, hsl(0 0% 100% / 0.16) 0%, transparent 52%),
+    radial-gradient(circle at 78% 28%, hsl(44 100% 86% / 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 42% 82%, hsl(0 0% 100% / 0.1) 0%, transparent 55%),
+    radial-gradient(circle at 88% 88%, hsl(40 100% 78% / 0.16) 0%, transparent 60%);
+
   filter: blur(0px);
-  animation: edenLedDrift 18s ease-in-out infinite alternate;
+  animation: edenLedDrift 20s ease-in-out infinite alternate;
+}
+
+/* LED array bars (subtle, behind content) */
+.eden-led::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* Horizontal micro-segments = "LED strip" feel */
+  background:
+    repeating-linear-gradient(
+      90deg,
+      hsl(44 100% 88% / 0.22) 0 10px,
+      hsl(0 0% 100% / 0.0) 10px 22px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      hsl(44 100% 86% / 0.11) 0 1px,
+      hsl(0 0% 100% / 0.0) 1px 26px
+    );
+
+  background-size: 240px 100%, 100% 26px;
+  background-position: 0% 0%, 0% 0%;
+
+  opacity: 0.14;
+  filter: blur(0.6px);
+  mix-blend-mode: screen;
+
+  animation:
+    edenLedBars 26s linear infinite,
+    edenLedFlicker 9.5s ease-in-out infinite;
+}
+
+/* Secondary diagonals for depth (very soft) */
+.eden-led::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      hsl(0 0% 100% / 0.12) 0 2px,
+      transparent 2px 18px
+    );
+  opacity: 0.09;
+  filter: blur(1.2px);
+  mix-blend-mode: screen;
+  animation: edenLedBars 34s linear infinite reverse;
 }
 
 @keyframes edenLedDrift {
   0% {
     transform: translate3d(-1%, -1%, 0) scale(1.02);
-    opacity: 0.52;
+    opacity: 0.38;
   }
   50% {
     transform: translate3d(1.5%, 1%, 0) scale(1.06);
-    opacity: 0.6;
+    opacity: 0.46;
   }
   100% {
     transform: translate3d(-1.2%, 1.8%, 0) scale(1.04);
-    opacity: 0.55;
+    opacity: 0.42;
+  }
+}
+
+@keyframes edenLedBars {
+  0% {
+    background-position: 0% 0%, 0% 0%;
+  }
+  100% {
+    background-position: 100% 0%, 0% 0%;
+  }
+}
+
+@keyframes edenLedFlicker {
+  0%,
+  100% {
+    opacity: 0.14;
+  }
+  40% {
+    opacity: 0.16;
+  }
+  60% {
+    opacity: 0.12;
   }
 }
 
