@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import "@/styles/eden.css";
 import { toast } from "@/hooks/use-toast";
+import EdenIntroOverlay from "./EdenIntroOverlay";
 
 type EdenLeafStatus = "loading" | "loaded" | "error" | "timeout";
 
@@ -444,6 +445,7 @@ export default function EdenLanding() {
   }, []);
 
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
 
   const [activeTab, setActiveTab] = useState<TabKey>("mare");
   const [tabVisible, setTabVisible] = useState(false);
@@ -892,6 +894,8 @@ export default function EdenLanding() {
       <a className="skip-link" href="#main-content">
         Vai al contenuto
       </a>
+
+      {!introDone && <EdenIntroOverlay onFinish={() => setIntroDone(true)} />}
 
       {/* Sfondo continuo: canvas + aurora */}
       <canvas id="eden-hero-canvas" ref={canvasRef} />
