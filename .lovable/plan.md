@@ -1,66 +1,107 @@
 
+## Contesto (cosa ho trovato nel repo)
+Nel repo `edenfoowine` non c’è (o non è indicato) un “sito pubblicato” esterno da clonare. Però c’è già una **conversione React nativa** della landing EDEN:
+
+- `src/components/eden/EdenLanding.tsx` (landing completa, con interazioni JS portate in React)
+- `src/styles/eden.css` (CSS portato 1:1 dall’HTML, con palette e font)
+- asset in `public/eden/`:
+  - `eden-logo.jpg`
+  - `eden-hero-logo.png`
+  - `leaf.png`
+  - `leaf-source.png`
+  - (oltre alla versione HTML statica `public/eden/nuovo_1-2.html`, utile come reference)
+
+Dato che hai scelto **React nativo (conversione)** e **supporto link interni**, la strada più fedele e veloce è: **importare EdenLanding + eden.css + asset**, e far diventare `EdenLanding` la Home.
+
+---
+
 ## Obiettivo
-Ricreare **1:1 la UI** del sito (aspetto + layout + pagine) **senza collegare GitHub** e restando su **Vite + React Router**, copiando **asset e contenuti identici** *solo se recuperabili dal sito pubblicato*.
+Portare nel tuo progetto attuale (Vite + React Router) la landing “EDEN” **UI 1:1**, in React nativo, con:
+- anchor navigation (`#eden`, `#cucina`, `#gallery`, `#eventi`, `#recensioni`, `#contatti`)
+- interazioni (menu mobile, tabs Mare/Terra, counters, reveal on scroll, gallery filter + lightbox, copy address, ecc.)
+- asset identici (quelli presenti in `public/eden/` nel repo)
 
-## Vincolo / prerequisito
-Hai scelto “Da sito pubblicato”, ma al momento hai fornito solo il link GitHub.  
-Per procedere serve **l’URL del sito online** (dominio/preview) da clonare visivamente.
+---
 
-## Piano di implementazione (UX + funzionalità)
-### 1) Raccolta struttura del sito (dal sito pubblicato)
-- Prendere l’URL pubblico e:
-  - Mappare tutte le pagine principali (menu/footers, sezioni, eventuali pagine interne).
-  - Identificare componenti ripetuti (header, navbar, footer, hero, cards, CTA, griglie, modali).
+## Piano di implementazione (passi concreti)
 
-**Deliverable:** elenco route (es. `/`, `/about`, `/products`, ecc.) + inventario componenti UI.
+### 1) Import “modulo EDEN” nel progetto corrente
+Creerò/porterò questi file (copiandoli dal repo):
+- `src/components/eden/EdenLanding.tsx`
+- `src/styles/eden.css`
 
-### 2) Riproduzione layout globale 1:1
-- Creare il “frame” del sito:
-  - Header/navigation identici (stati hover/active, dropdown se presenti).
-  - Footer identico.
-  - Spaziature, container widths, responsive breakpoints (mobile/tablet/desktop).
+Note tecniche:
+- `EdenLanding.tsx` importa `@/styles/eden.css` e usa `toast` da `@/hooks/use-toast` (che nel tuo progetto esiste già), quindi l’integrazione è lineare.
+- Il CSS applica classi speciali a `html/body` (es. `eden-html`, `eden-body`) per ottenere lo stesso comportamento dell’HTML statico: controlleremo che queste classi vengano aggiunte/rimosse correttamente quando la pagina monta/smonta.
 
-**Deliverable:** layout coerente e riutilizzabile su tutte le pagine.
+---
 
-### 3) Tema e stile (design system) 1:1
-- Allineare:
-  - Palette colori (anche gradienti), tipografia, pesi, letter-spacing.
-  - Componenti base (bottoni, input, badge, card, link, separatori).
-  - Animazioni/transizioni (hover, opening menu, ecc.).
+### 2) Import asset identici
+Copierò dal repo dentro il tuo progetto:
+- `public/eden/eden-logo.jpg`
+- `public/eden/eden-hero-logo.png`
+- `public/eden/leaf.png`
+- `public/eden/leaf-source.png`
 
-**Deliverable:** UI kit interno che replica il look&feel.
+Opzionale ma utile come “golden reference”:
+- `public/eden/nuovo_1-2.html` (non servirà per runtime, ma può essere usato per confronti 1:1 se vuoi)
 
-### 4) Implementazione pagine (UI-only)
-- Per ogni pagina:
-  - Ricostruire sezioni in ordine identico.
-  - Inserire testi/immagini uguali (se disponibili via sito).
-  - Riprodurre componenti come slider/carousel, accordion, tabs, ecc. dove presenti (solo lato UI).
+---
 
-**Deliverable:** tutte le route navigabili e visivamente 1:1.
+### 3) Collegare la Home alla landing EDEN
+Aggiornerò `src/pages/Index.tsx` per renderizzare:
+- `<EdenLanding />`
 
-### 5) Asset “identici” (quando possibile)
-- Recuperare e integrare:
-  - Immagini, icone, fonts (se caricati pubblicamente e legalmente riutilizzabili).
-  - Favicon e immagini social (OG) se pubbliche.
+Così:
+- Resti su **Vite + React Router**
+- La UI diventa “nativa” (niente iframe)
+- Gli anchor link funzionano in-page (hash navigation) come nel markup originale
 
-**Nota:** se alcuni asset non sono accessibili dal sito (protetti/ottimizzati/blocked), li sostituiamo temporaneamente con placeholder *finché non li fornisci tu*.
+---
 
-### 6) Verifica 1:1 e rifiniture
-- Checklist finale:
-  - Pixel-check sezioni chiave (hero, header, footer, cards).
-  - Responsive check (mobile/tablet/desktop).
-  - Consistenza spaziature e tipografia.
-  - Performance base (immagini, lazy load se necessario).
+### 4) Gestione “link interni” e navigazione hash
+Per supportare “anche pagine/link interni” (dato che la landing usa molti `href="#..."`):
 
-**Deliverable:** “clone” UI pronto.
+- Verificherò che il click su anchor:
+  - scrolli correttamente alla sezione (smooth)
+  - non rompa il routing React Router
+- Se necessario, aggiungerò un micro-helper (in `EdenLanding.tsx`) che:
+  - intercetta i click sugli anchor `#...`
+  - esegue `document.querySelector(hash)?.scrollIntoView({ behavior: "smooth" })`
+  - aggiorna l’URL con `history.replaceState` (opzionale) per mantenere la compatibilità “1:1” visiva e comportamentale
 
-## Cosa mi serve da te (1 cosa sola)
-- Incolla qui **l’URL del sito pubblicato** che vuoi ricreare 1:1.
+---
 
-<lov-actions>
-  <lov-suggestion message="Testa il sito end-to-end (navigazione tra pagine, responsive mobile/desktop, hover/stati attivi) per verificare che sia davvero 1:1.">Verify that it works</lov-suggestion>
-  <lov-suggestion message="Aggiungi tutte le route principali e una navbar identica (con stati active, dropdown e versione mobile hamburger) usando React Router.">Ricrea navigazione completa</lov-suggestion>
-  <lov-suggestion message="Replica il tema 1:1 (colori HSL, font, bottoni, card, spaziature) creando un design system riutilizzabile.">Tema e UI kit 1:1</lov-suggestion>
-  <lov-suggestion message="Importa e ottimizza gli asset (immagini, favicon, font) e sostituisci eventuali risorse non accessibili con placeholder finché non le fornisci.">Gestione asset identici</lov-suggestion>
-  <lov-suggestion message="Aggiungi una pagina 'Styleguide' interna per confrontare componenti (bottoni, headings, cards) e velocizzare i micro-aggiustamenti 1:1.">Pagina Styleguide</lov-suggestion>
-</lov-actions>
+### 5) Metadati (title/description/OG) coerenti con EDEN
+Allineerò `index.html` del progetto corrente a quanto emerge nel repo (almeno):
+- `<title>Eden Food.Wine.Restaurant</title>`
+- `meta description` in italiano
+- eventuali `og:` e `twitter:` se vuoi che la condivisione social sia coerente
+
+(Questo non cambia la UI, ma è parte del “clone” del sito visto dall’esterno.)
+
+---
+
+### 6) Verifica 1:1 (checklist)
+Dopo l’integrazione farò un pass di controllo funzionale:
+- Header: sticky + menu mobile (apri/chiudi) + CTA “Prenota”
+- Hero: canvas/aurora/LED effects (se implementati in EdenLanding) + parallax layers
+- Tabs Mare/Terra: switch, animazioni, counters prezzi
+- Gallery: filtri + lightbox + caption
+- Reviews: counters (4.5 / 4.9 / 8000)
+- Contatti: pulsante copia indirizzo + link Maps + link WhatsApp/tel
+- Responsive: 390px, 768px, 1024px, desktop
+
+---
+
+## Output atteso
+- La route `/` mostra la landing EDEN completa in React nativo
+- Gli asset locali `/eden/...` sono serviti dal tuo `public/eden`
+- La UI risulta 1:1 rispetto a `nuovo_1-2.html` (stile + animazioni + layout + sezioni)
+
+---
+
+## Rischi/Note (trasparenti)
+- Alcune immagini della gallery sono link Pexels esterni: sono “identiche” alla versione attuale del file, ma dipendono da risorse esterne (se un URL cambia, l’immagine potrebbe non caricarsi). Se vuoi “asset 100% locali”, in una fase successiva possiamo scaricare e mettere tutto in `public/eden/gallery/...`.
+- Se il canvas effect dipende da `requestAnimationFrame`, verificherò che venga “cleanupato” su unmount per evitare consumi CPU se un domani aggiungi altre route.
+
