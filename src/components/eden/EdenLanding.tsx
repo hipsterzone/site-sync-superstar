@@ -676,7 +676,7 @@ export default function EdenLanding() {
   }, [galleryItems, galleryFilter]);
 
   return (
-    <div className="eden-theme">
+    <div className="eden-theme" data-mood={activeTab}>
       <a className="skip-link" href="#main-content">
         Vai al contenuto
       </a>
@@ -684,6 +684,10 @@ export default function EdenLanding() {
       {/* Sfondo continuo: canvas + aurora */}
       <canvas id="eden-hero-canvas" ref={canvasRef} />
       <div className="hero-aurora" />
+      <div className="eden-leaves" aria-hidden="true">
+        <img className="eden-leaf eden-leaf--a parallax-layer" data-parallax="0.08" src="/eden/leaf.png" alt="" loading="eager" />
+        <img className="eden-leaf eden-leaf--b parallax-layer" data-parallax="0.14" src="/eden/leaf-source.png" alt="" loading="eager" />
+      </div>
       <div className="eden-led" aria-hidden="true" />
 
       <div className="page">
