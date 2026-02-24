@@ -63,6 +63,10 @@ body.eden-body #root {
   --border: 225 20% 16%;
   --input: 225 20% 16%;
   --ring: var(--eden-emerald);
+
+  /* CRITICAL: create a local stacking context so negative layers can't slip behind body/#root */
+  position: relative;
+  z-index: 0;
 }
 
 /* Reset/Foundations */
@@ -85,8 +89,50 @@ body.eden-body #root {
   display: block;
 }
 
+/* Debug overlay (enabled only with ?edenDebug=1) */
+.eden-debug {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 50;
+  width: min(260px, calc(100vw - 28px));
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    hsl(225 64% 3% / 0.78);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px hsl(0 0% 0% / 0.65);
+  color: hsl(var(--eden-pearl));
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eden-debug-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.eden-debug-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  color: hsl(var(--eden-text-soft));
+}
+
+.eden-debug-row strong {
+  color: hsl(39 26% 92%);
+  font-weight: 600;
+}
+
 .page {
   position: relative;
+  z-index: 1;
   min-height: 100vh;
   overflow: hidden;
   isolation: isolate;
@@ -213,6 +259,7 @@ body.eden-body #root {
 
 .hero {
   position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -231,7 +278,9 @@ body.eden-body #root {
     radial-gradient(circle at 100% 0, hsl(var(--eden-bg-ne)) 0%, transparent 55%),
     radial-gradient(circle at 0 100%, hsl(var(--eden-bg-sw)) 0%, transparent 60%),
     hsl(var(--eden-night));
-  z-index: -3;
+
+  /* CRITICAL: keep it behind content, but never behind body/#root */
+  z-index: 0;
 }
 
 .hero-aurora {
@@ -242,7 +291,7 @@ body.eden-body #root {
     radial-gradient(circle at 90% 100%, hsl(36 53% 87% / 0.3) 0%, transparent 55%);
   mix-blend-mode: screen;
   opacity: 0.9;
-  z-index: -2;
+  z-index: 0;
   pointer-events: none;
   animation: auroraDrift 24s ease-in-out infinite alternate;
 }
@@ -276,7 +325,7 @@ body.eden-body #root {
     radial-gradient(circle at 10% 100%, hsl(33 100% 86% / 0.4) 0%, transparent 60%);
   filter: blur(8px);
   opacity: 0.8;
-  z-index: -1;
+  z-index: 0;
   animation: blobMorph 26s ease-in-out infinite alternate;
 }
 
