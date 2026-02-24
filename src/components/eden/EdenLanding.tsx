@@ -2,6 +2,13 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import "@/styles/eden.css";
 import { toast } from "@/hooks/use-toast";
 
+type EdenLeafStatus = "loading" | "loaded" | "error" | "timeout";
+
+type EdenDebugInfo = {
+  leafStatus: EdenLeafStatus;
+  canvasSize: string;
+  leavesCount: number;
+};
 
 type TabKey = "mare" | "terra";
 
@@ -87,13 +94,22 @@ function animateCounterStat(el: HTMLElement, target: number) {
   return () => window.clearInterval(timer);
 }
 
-function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
+function useHeroCanvas(
+  canvasRef: RefObject<HTMLCanvasElement>,
+  opts?: {
+    debug?: boolean;
+    onDebug?: (patch: Partial<EdenDebugInfo>) => void;
+  },
+) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const debug = Boolean(opts?.debug);
+    const onDebug = opts?.onDebug;
 
     let leaves: Array<any> = [];
     let glows: Array<any> = [];
@@ -115,6 +131,10 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       return Math.max(a, Math.min(b, n));
     }
 
+    function reportCanvas() {
+      onDebug?.({ canvasSize: `${heroWidth}×${heroHeight}` });
+    }
+
     function resizeCanvas() {
       heroWidth = window.innerWidth;
       heroHeight = window.innerHeight;
@@ -122,6 +142,7 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       canvas.height = heroHeight;
       createLeaves();
       createGlows();
+      reportCanvas();
     }
 
     function createLeaves() {
@@ -141,6 +162,7 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
           time: Math.random() * 100,
         });
       }
+      onDebug?.({ leavesCount: count });
     }
 
     function createGlows() {
@@ -243,9 +265,6 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       ctx.rotate(l.angle);
 
       // Target requested: baseH = 19.50px (absolute), keeping physics/animation identical.
-      // Previously:
-      // -10% applied (28 → 25.2)
-      // -15% additional (25.2 → 21.42)
       const baseH = 19.5;
       const h = baseH * l.size;
       const w = h * leafAspect;
@@ -335,6 +354,8 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mouseleave", onMouseLeave);
 
+    onDebug?.({ leafStatus: "loading" });
+
     // Preload leaf image and start only when ready (avoids blank/incorrect first frames)
     const leafImg = new Image();
     leafImg.src = "/eden/leaf-source.png";
@@ -344,12 +365,25 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       raf = requestAnimationFrame(animate);
     };
 
+    const leafTimeout = window.setTimeout(() => {
+      if (leafReady) return;
+      onDebug?.({ leafStatus: "timeout" });
+      console.warn("[EDEN] Leaf sprite still not ready after 2.5s. Check /eden/leaf-source.png loading.");
+    }, 2500);
+
     leafImg.onload = () => {
+      if (debug) console.info("[EDEN] Leaf sprite loaded:", leafImg.naturalWidth, leafImg.naturalHeight);
       buildLeafSprites(leafImg);
+      onDebug?.({ leafStatus: "loaded" });
+      window.clearTimeout(leafTimeout);
       start();
     };
 
     leafImg.onerror = () => {
+      onDebug?.({ leafStatus: "error" });
+      window.clearTimeout(leafTimeout);
+      console.warn("[EDEN] Leaf sprite failed to load: /eden/leaf-source.png");
+
       // Fallback: run animation even if the image fails (leaves will just not draw)
       start();
     };
@@ -358,13 +392,28 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       window.removeEventListener("resize", onResize);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseleave", onMouseLeave);
+      window.clearTimeout(leafTimeout);
       cancelAnimationFrame(raf);
     };
-  }, [canvasRef]);
+  }, [canvasRef, opts?.debug, opts?.onDebug]);
 }
 
 export default function EdenLanding() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const debugEnabled = useMemo(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("edenDebug") === "1";
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const [debugInfo, setDebugInfo] = useState<EdenDebugInfo>({
+    leafStatus: "loading",
+    canvasSize: "-",
+    leavesCount: 0,
+  });
 
   // Match html/body globals from nuovo_1.html (smooth scroll, background, color, height)
   useEffect(() => {
@@ -395,7 +444,13 @@ export default function EdenLanding() {
 
   const eventFormRef = useRef<HTMLFormElement | null>(null);
 
-  useHeroCanvas(canvasRef);
+  useHeroCanvas(canvasRef, {
+    debug: debugEnabled,
+    onDebug: (patch) => {
+      if (!debugEnabled) return;
+      setDebugInfo((prev) => ({ ...prev, ...patch }));
+    },
+  });
   useRevealOnScroll(".reveal-on-scroll");
 
   // Stagger reveal (gallery)
@@ -818,6 +873,24 @@ export default function EdenLanding() {
       <canvas id="eden-hero-canvas" ref={canvasRef} />
       <div className="hero-aurora" />
       <div className="eden-led" aria-hidden="true" />
+
+      {debugEnabled && (
+        <div className="eden-debug" role="status" aria-live="polite">
+          <div className="eden-debug-title">EDEN Debug</div>
+          <div className="eden-debug-row">
+            <span>Leaf sprite</span>
+            <strong>{debugInfo.leafStatus}</strong>
+          </div>
+          <div className="eden-debug-row">
+            <span>Canvas</span>
+            <strong>{debugInfo.canvasSize}</strong>
+          </div>
+          <div className="eden-debug-row">
+            <span>Leaves</span>
+            <strong>{debugInfo.leavesCount}</strong>
+          </div>
+        </div>
+      )}
 
       <div className="page">
         {/* HEADER */}
