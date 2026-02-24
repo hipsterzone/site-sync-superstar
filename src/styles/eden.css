@@ -430,6 +430,9 @@ body.eden-body #root {
 }
 
 .hero-scroll {
+  /* Optical centering: keep the CTA visually centered but nudged left */
+  --hero-scroll-x: -24px;
+
   position: absolute;
   bottom: 26px;
   left: 50%;
@@ -443,6 +446,13 @@ body.eden-body #root {
   align-items: center;
   gap: 10px;
   pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .hero-scroll {
+    /* Reduce the offset on small screens so it doesn't drift too far */
+    --hero-scroll-x: -12px;
+  }
 }
 
 .hero-scroll-inner {
@@ -2372,6 +2382,12 @@ body.eden-lock {
 .parallax-layer {
   transform: translate3d(0, var(--parallaxY, 0px), 0);
   will-change: transform;
+}
+
+/* CRITICAL: the hero scroll CTA needs BOTH X centering/offset and Y parallax.
+   .parallax-layer sets transform, so we compose it here to avoid overriding. */
+.hero-scroll.parallax-layer {
+  transform: translate3d(calc(-50% + var(--hero-scroll-x, -24px)), var(--parallaxY, 0px), 0);
 }
 
 .hero-blob-wrap {
