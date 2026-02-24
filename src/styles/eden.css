@@ -17,10 +17,10 @@
   --eden-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --eden-font-serif: "Cormorant Garamond", "Times New Roman", serif;
 
-  /* Global mood-driven background tokens (so Mare/Terra affects the whole page) */
-  --eden-bg-nw: 226.6 44.1% 22.35%;
-  --eden-bg-ne: 158.8 45% 13.5%;
-  --eden-bg-sw: 355 35.3% 18.85%;
+  /* Hero canvas background tokens (fixed 1:1 with nuovo_1-2.html) */
+  --eden-bg-nw: 226.6 44.1% 22.35%; /* #202b52 */
+  --eden-bg-ne: 158.8 45% 13.5%; /* #133227 */
+  --eden-bg-sw: 355 35.3% 18.85%; /* #411f22 */
 }
 
 /* Apply the same html/body globals from the static HTML, but only when EDEN is mounted */
@@ -63,24 +63,6 @@ body.eden-body #root {
   --border: 225 20% 16%;
   --input: 225 20% 16%;
   --ring: var(--eden-emerald);
-
-  /* Default mood tokens (terra-ish) */
-  --eden-bg-nw: 226.6 44.1% 22.35%;
-  --eden-bg-ne: 158.8 45% 13.5%;
-  --eden-bg-sw: 355 35.3% 18.85%;
-}
-
-/* Mare/Terra mood affects the global background layers too */
-.eden-theme[data-mood="mare"] {
-  --eden-bg-nw: 205 55% 22%;
-  --eden-bg-ne: 170 62% 16%;
-  --eden-bg-sw: 224 45% 14%;
-}
-
-.eden-theme[data-mood="terra"] {
-  --eden-bg-nw: 36 46% 22%;
-  --eden-bg-ne: 155 42% 14%;
-  --eden-bg-sw: 355 35.3% 18.85%;
 }
 
 /* Reset/Foundations */
@@ -265,40 +247,6 @@ body.eden-body #root {
   animation: auroraDrift 24s ease-in-out infinite alternate;
 }
 
-/* Decorative leaves layer (PNG), as in the original static build */
-.eden-leaves {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  opacity: 0.95;
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 18px 60px hsl(0 0% 0% / 0.65));
-}
-
-.eden-leaf {
-  position: absolute;
-  width: min(52vw, 760px);
-  height: auto;
-  opacity: 0.32;
-  filter: blur(0.2px) saturate(1.05);
-  transform: translate3d(0, var(--parallaxY, 0px), 0) rotate(var(--eden-leaf-rot, 0deg));
-  will-change: transform;
-}
-
-.eden-leaf--a {
-  left: -14vw;
-  top: -10vh;
-  --eden-leaf-rot: -14deg;
-}
-
-.eden-leaf--b {
-  right: -18vw;
-  bottom: -22vh;
-  width: min(58vw, 860px);
-  opacity: 0.22;
-  --eden-leaf-rot: 10deg;
-}
 
 @keyframes auroraDrift {
   0% {
@@ -508,6 +456,10 @@ body.eden-body #root {
   .hero-title {
     font-size: 3.4rem;
     letter-spacing: 0.4em;
+  }
+
+  .hero-logo {
+    width: clamp(240px, 72vw, 440px);
   }
 
   .hero-sub {
@@ -2146,20 +2098,36 @@ body.eden-lock {
   overflow: hidden;
 }
 
-/* LED overlay */
+/* LED bianco/giallo (intensità media) — 1:1 nuovo_1-2.html */
 .eden-led {
   position: fixed;
-  inset: -20% -20%;
+  inset: -20%;
   pointer-events: none;
-  z-index: 2;
-  mix-blend-mode: overlay;
+  z-index: -1;
+  mix-blend-mode: screen;
   opacity: 0.55;
   background:
-    radial-gradient(circle at 10% 20%, hsl(var(--eden-emerald) / 0.12), transparent 35%),
-    radial-gradient(circle at 70% 80%, hsl(var(--eden-gold) / 0.1), transparent 40%),
-    repeating-linear-gradient(90deg, hsl(0 0% 100% / 0.04) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(0deg, hsl(0 0% 100% / 0.02) 0 1px, transparent 1px 10px);
-  filter: blur(0.2px);
+    radial-gradient(circle at 18% 18%, hsl(0 0% 100% / 0.18) 0%, transparent 52%),
+    radial-gradient(circle at 78% 28%, hsl(40 100% 85% / 0.22) 0%, transparent 55%),
+    radial-gradient(circle at 42% 82%, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 88% 88%, hsl(38 100% 74% / 0.18) 0%, transparent 60%);
+  filter: blur(0px);
+  animation: edenLedDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes edenLedDrift {
+  0% {
+    transform: translate3d(-1%, -1%, 0) scale(1.02);
+    opacity: 0.52;
+  }
+  50% {
+    transform: translate3d(1.5%, 1%, 0) scale(1.06);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate3d(-1.2%, 1.8%, 0) scale(1.04);
+    opacity: 0.55;
+  }
 }
 
 /* Parallax layers */
@@ -2177,11 +2145,13 @@ body.eden-lock {
 }
 
 .hero-logo {
-  width: min(720px, 78vw);
-  height: auto;
   display: block;
   margin-inline: auto;
-  filter: drop-shadow(0 18px 40px hsl(0 0% 0% / 0.7));
+  width: clamp(320px, 40vw, 760px);
+  max-width: 92vw;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 42px hsl(0 0% 0% / 0.55));
 }
 
 /* Header nav + mobile menu */
