@@ -16,6 +16,11 @@
 
   --eden-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --eden-font-serif: "Cormorant Garamond", "Times New Roman", serif;
+
+  /* Global mood-driven background tokens (so Mare/Terra affects the whole page) */
+  --eden-bg-nw: 226.6 44.1% 22.35%;
+  --eden-bg-ne: 158.8 45% 13.5%;
+  --eden-bg-sw: 355 35.3% 18.85%;
 }
 
 /* Apply the same html/body globals from the static HTML, but only when EDEN is mounted */
@@ -26,10 +31,18 @@ html.eden-html {
 html.eden-html,
 body.eden-body {
   height: 100%;
+  margin: 0;
   background: hsl(var(--eden-night));
   color: hsl(var(--eden-pearl));
 }
 
+/* Ensure EDEN stays full-bleed even if the app template styles #root */
+body.eden-body #root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
 
 .eden-theme {
   /* Map EDEN palette into the app semantic tokens */
@@ -50,6 +63,24 @@ body.eden-body {
   --border: 225 20% 16%;
   --input: 225 20% 16%;
   --ring: var(--eden-emerald);
+
+  /* Default mood tokens (terra-ish) */
+  --eden-bg-nw: 226.6 44.1% 22.35%;
+  --eden-bg-ne: 158.8 45% 13.5%;
+  --eden-bg-sw: 355 35.3% 18.85%;
+}
+
+/* Mare/Terra mood affects the global background layers too */
+.eden-theme[data-mood="mare"] {
+  --eden-bg-nw: 205 55% 22%;
+  --eden-bg-ne: 170 62% 16%;
+  --eden-bg-sw: 224 45% 14%;
+}
+
+.eden-theme[data-mood="terra"] {
+  --eden-bg-nw: 36 46% 22%;
+  --eden-bg-ne: 155 42% 14%;
+  --eden-bg-sw: 355 35.3% 18.85%;
 }
 
 /* Reset/Foundations */
@@ -214,9 +245,9 @@ body.eden-body {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(circle at 0 0, hsl(226.6 44.1% 22.35%) 0%, transparent 55%),
-    radial-gradient(circle at 100% 0, hsl(158.8 45% 13.5%) 0%, transparent 55%),
-    radial-gradient(circle at 0 100%, hsl(355 35.3% 18.85%) 0%, transparent 60%),
+    radial-gradient(circle at 0 0, hsl(var(--eden-bg-nw)) 0%, transparent 55%),
+    radial-gradient(circle at 100% 0, hsl(var(--eden-bg-ne)) 0%, transparent 55%),
+    radial-gradient(circle at 0 100%, hsl(var(--eden-bg-sw)) 0%, transparent 60%),
     hsl(var(--eden-night));
   z-index: -3;
 }
@@ -232,6 +263,41 @@ body.eden-body {
   z-index: -2;
   pointer-events: none;
   animation: auroraDrift 24s ease-in-out infinite alternate;
+}
+
+/* Decorative leaves layer (PNG), as in the original static build */
+.eden-leaves {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 18px 60px hsl(0 0% 0% / 0.65));
+}
+
+.eden-leaf {
+  position: absolute;
+  width: min(52vw, 760px);
+  height: auto;
+  opacity: 0.32;
+  filter: blur(0.2px) saturate(1.05);
+  transform: translate3d(0, var(--parallaxY, 0px), 0) rotate(var(--eden-leaf-rot, 0deg));
+  will-change: transform;
+}
+
+.eden-leaf--a {
+  left: -14vw;
+  top: -10vh;
+  --eden-leaf-rot: -14deg;
+}
+
+.eden-leaf--b {
+  right: -18vw;
+  bottom: -22vh;
+  width: min(58vw, 860px);
+  opacity: 0.22;
+  --eden-leaf-rot: 10deg;
 }
 
 @keyframes auroraDrift {
