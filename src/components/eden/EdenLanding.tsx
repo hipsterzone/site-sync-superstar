@@ -91,6 +91,7 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -100,7 +101,19 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
     let heroHeight = 0;
     let raf = 0;
 
+    // Leaf sprite (real image) — optimized + subtle tint variants (1:1 from nuovo_1-2.html)
+    let leafSprites: HTMLCanvasElement[] | null = null;
+    let leafAspect = 1;
+    let leafReady = false;
+
+    const LEAF_OPACITY = 0.42;
+    const LEAF_TINT_HUES = [115, 123, 131, 139, 147];
+
     const mouse = { x: 0, y: 0, active: false };
+
+    function clamp(n: number, a: number, b: number) {
+      return Math.max(a, Math.min(b, n));
+    }
 
     function resizeCanvas() {
       heroWidth = window.innerWidth;
@@ -113,7 +126,6 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
 
     function createLeaves() {
       leaves = [];
-      // 1:1 from nuovo_1.html
       const count = Math.floor((heroWidth * heroHeight) / 22000);
       for (let i = 0; i < count; i++) {
         leaves.push({
@@ -133,7 +145,6 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
 
     function createGlows() {
       glows = [];
-      // 1:1 from nuovo_1.html
       const count = Math.max(12, Math.floor((heroWidth * heroHeight) / 90000));
       for (let i = 0; i < count; i++) {
         glows.push({
@@ -150,31 +161,100 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       }
     }
 
+    // Remove the (baked) checkerboard background by keying out low-saturation pixels.
+    // This runs ONCE on load and is then drawn as cached sprites for mobile performance.
+    function buildLeafSprites(img: HTMLImageElement) {
+      const srcW = img.naturalWidth || img.width;
+      const srcH = img.naturalHeight || img.height;
+      if (!srcW || !srcH) return;
+
+      // 1) Create an alpha-masked source (background removed)
+      const masked = document.createElement("canvas");
+      masked.width = srcW;
+      masked.height = srcH;
+      const mctx = masked.getContext("2d");
+      if (!mctx) return;
+
+      mctx.clearRect(0, 0, srcW, srcH);
+      mctx.drawImage(img, 0, 0);
+
+      const imageData = mctx.getImageData(0, 0, srcW, srcH);
+      const d = imageData.data;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const sat = max === 0 ? 0 : (max - min) / max; // quick HSV-like saturation
+
+        // Background is mostly grayscale (low saturation). Leaf is green (higher saturation).
+        // A slightly generous threshold avoids leaving grid artifacts.
+        if (sat < 0.12) {
+          d[i + 3] = 0;
+        }
+      }
+
+      mctx.putImageData(imageData, 0, 0);
+
+      // 2) Downscale to a small sprite (mobile-friendly)
+      const targetH = 64;
+      leafAspect = srcW / srcH;
+      const targetW = Math.max(1, Math.round(targetH * leafAspect));
+
+      const base = document.createElement("canvas");
+      base.width = targetW;
+      base.height = targetH;
+      const bctx = base.getContext("2d");
+      if (!bctx) return;
+
+      bctx.clearRect(0, 0, targetW, targetH);
+      bctx.imageSmoothingEnabled = true;
+      bctx.imageSmoothingQuality = "high";
+      bctx.drawImage(masked, 0, 0, targetW, targetH);
+
+      // 3) Pre-render tinted variants (no per-frame tint work)
+      leafSprites = LEAF_TINT_HUES.map((h) => {
+        const c = document.createElement("canvas");
+        c.width = targetW;
+        c.height = targetH;
+        const cctx = c.getContext("2d");
+        if (!cctx) return c;
+
+        cctx.clearRect(0, 0, targetW, targetH);
+        cctx.drawImage(base, 0, 0);
+        cctx.globalCompositeOperation = "source-atop";
+        cctx.fillStyle = `hsla(${h},45%,55%,0.18)`;
+        cctx.fillRect(0, 0, targetW, targetH);
+        cctx.globalCompositeOperation = "source-over";
+        return c;
+      });
+
+      leafReady = true;
+    }
+
     function drawLeaf(l: any) {
+      if (!leafReady || !leafSprites || leafSprites.length === 0) return;
+
       ctx.save();
       ctx.translate(l.x, l.y);
       ctx.rotate(l.angle);
-      ctx.scale(l.size, l.size);
 
-      const grad = ctx.createLinearGradient(0, -14, 0, 14);
-      grad.addColorStop(0, `hsla(${l.hue},70%,80%,0.3)`);
-      grad.addColorStop(1, `hsla(${l.hue + 10},55%,35%,0.7)`);
+      // Target requested: baseH = 19.50px (absolute), keeping physics/animation identical.
+      // Previously:
+      // -10% applied (28 → 25.2)
+      // -15% additional (25.2 → 21.42)
+      const baseH = 19.5;
+      const h = baseH * l.size;
+      const w = h * leafAspect;
 
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(0, -14);
-      ctx.bezierCurveTo(8, -12, 10, 2, 0, 14);
-      ctx.bezierCurveTo(-10, 2, -8, -12, 0, -14);
-      ctx.closePath();
-      ctx.fill();
+      const t = clamp((l.hue - 115) / 30, 0, 0.999);
+      const idx = clamp(Math.floor(t * leafSprites.length), 0, leafSprites.length - 1);
 
-      ctx.strokeStyle = `hsla(${l.hue + 20},50%,80%,0.5)`;
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(0, -10);
-      ctx.lineTo(0, 10);
-      ctx.stroke();
-
+      ctx.globalAlpha = LEAF_OPACITY;
+      ctx.drawImage(leafSprites[idx], -w / 2, -h / 2, w, h);
       ctx.restore();
     }
 
@@ -193,7 +273,6 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
       ctx.clearRect(0, 0, heroWidth, heroHeight);
 
       for (const g of glows) {
-        // 1:1 from nuovo_1.html
         g.t += 0.01;
         g.x += g.speedX;
         g.y += g.speedY;
@@ -210,6 +289,7 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
 
       for (const l of leaves) {
         l.time += 0.016;
+
         const sway = Math.sin(l.time * l.swaySpeed) * l.swayAmp;
 
         let wind = 0;
@@ -255,8 +335,24 @@ function useHeroCanvas(canvasRef: RefObject<HTMLCanvasElement>) {
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mouseleave", onMouseLeave);
 
-    resizeCanvas();
-    raf = requestAnimationFrame(animate);
+    // Preload leaf image and start only when ready (avoids blank/incorrect first frames)
+    const leafImg = new Image();
+    leafImg.src = "/eden/leaf-source.png";
+
+    const start = () => {
+      resizeCanvas();
+      raf = requestAnimationFrame(animate);
+    };
+
+    leafImg.onload = () => {
+      buildLeafSprites(leafImg);
+      start();
+    };
+
+    leafImg.onerror = () => {
+      // Fallback: run animation even if the image fails (leaves will just not draw)
+      start();
+    };
 
     return () => {
       window.removeEventListener("resize", onResize);
@@ -721,10 +817,6 @@ export default function EdenLanding() {
       {/* Sfondo continuo: canvas + aurora */}
       <canvas id="eden-hero-canvas" ref={canvasRef} />
       <div className="hero-aurora" />
-      <div className="eden-leaves" aria-hidden="true">
-        <img className="eden-leaf eden-leaf--a parallax-layer" data-parallax="0.08" src="/eden/leaf.png" alt="" loading="eager" />
-        <img className="eden-leaf eden-leaf--b parallax-layer" data-parallax="0.14" src="/eden/leaf-source.png" alt="" loading="eager" />
-      </div>
       <div className="eden-led" aria-hidden="true" />
 
       <div className="page">
