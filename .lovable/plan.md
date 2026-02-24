@@ -1,133 +1,143 @@
 
-## Diagnosi (perché “manca tutto”)
-Dai file attuali vedo che **gli effetti ci sono nel codice** (canvas foglie/glow, aurora, LED overlay, parallax, cucina atmo, gallery, form eventi, ecc.) e che gli asset base (`public/eden/*`) esistono.
+## Obiettivo (1:1 col repo)
+Ripristinare **sfondo scuro** + **foglie animate del repo (sprite su canvas)** + **dimensione logo hero 1:1**, eliminando gli “esperimenti” non presenti nell’HTML sorgente.
 
-Quindi quando in preview “mancano foglie, cambio colore, sezione modulo sotto, sfondo”, le cause più probabili sono:
-
-1) **Il file HTML di riferimento non è presente nel progetto**
-- `public/eden/nuovo_1-2.html` **non esiste** (tool: “File not found”).
-- Senza quella “source of truth” non posso “leggere l’altra parte dell’HTML” e verificare cosa esattamente manca (markup + classi + assets + immagini di sfondo).
-
-2) **Gli stili globali del template Vite/Tailwind stanno interferendo**
-- Anche se `eden.css` imposta `body.eden-body { background: ... }`, potrebbero esserci regole globali che:
-  - limitano la larghezza (tipo `#root { max-width/padding }` del template),
-  - applicano background/overflow che “uccidono” il full-bleed,
-  - mettono z-index/stacking che copre canvas e overlay.
-
-3) **Il riferimento “foglie” nel tuo feedback sembra riferirsi a PNG decorativi (leaf.png / leaf-source.png), ma nel nostro porting le foglie sono attualmente disegnate su canvas**
-- Se su GitHub le foglie sono **immagini decorative** (non canvas-shapes), dobbiamo portare anche quel layer/markup CSS (e non solo “foglie in canvas”).
+Hai confermato:
+- Sfondo: **1:1 fisso (HTML)**
+- Foglie: **Sprite canvas (HTML)**
+- Logo hero: **1:1 (HTML)**
 
 ---
 
-## Cosa farò (piano operativo per riportare tutto 1:1)
+## Diagnosi rapida (perché ora “manca tutto”)
+1) **Foglie**: nel repo non sono “due PNG in overlay”, ma un’animazione **su canvas** che:
+   - pre-carica `/eden/leaf-source.png`
+   - rimuove lo sfondo a scacchi (key-out per bassa saturazione)
+   - genera **sprite tintati** e li disegna per frame (`drawImage`) con opacità e dimensioni precise.
+   
+   Nel nostro `useHeroCanvas()` invece stiamo disegnando foglie vettoriali (bezier) + in più abbiamo aggiunto un layer DOM `.eden-leaves` con `<img>`: **non è 1:1**.
 
-### Step 1 — Ripristinare la “source of truth” (HTML GitHub) nel progetto
-Obiettivo: avere un file HTML da diffare in modo deterministico.
+2) **Sfondo**: nell’HTML lo sfondo “vero” è il **background del canvas** `#eden-hero-canvas` con radial gradients hardcoded:
+   - `#202b52`, `#133227`, `#411f22`, `#02040a`
+   
+   In `eden.css` oggi lo abbiamo reso “mood-driven” con variabili (`--eden-bg-nw/ne/sw`), quindi **non combacia** e può risultare “meno scuro / diverso”.
 
-- Opzione A (consigliata): **aggiungere nel progetto** `public/eden/nuovo_1-2.html` (o l’HTML giusto) esattamente come su GitHub.
-- Opzione B: se non vuoi committarlo, mi dai **URL raw GitHub** del file (raw.githubusercontent.com) e lo userò per estrarre:
-  - markup mancante (es. foglie PNG, background layers, moduli)
-  - classi esatte
-  - eventuali nuove immagini/asset usati
-  - eventuali script/logic originali
-
-Deliverable: HTML di riferimento disponibile → posso fare porting 1:1 reale (non “a memoria”).
-
----
-
-### Step 2 — Forzare il layout full-bleed (fix “manca lo sfondo / manca tutto”)
-Obiettivo: eliminare qualsiasi “cornice template” attorno al sito EDEN.
-
-Azioni:
-- In `eden.css` aggiungere regole **solo quando EDEN è montato**, ad esempio:
-  - `body.eden-body #root { max-width: none; padding: 0; margin: 0; width: 100%; }`
-  - assicurare `#root` e wrapper non taglino `position: fixed` layers
-- Verificare stacking context:
-  - `#eden-hero-canvas` deve stare dietro (z-index negativo) ma non “sparire”
-  - `.page` deve avere contenuto sopra
-- Verificare che `overflow-x: hidden` non nasconda il canvas/overlay (che sono `fixed`).
-
-Deliverable: lo sfondo (canvas + aurora + gradienti) torna visibile a schermo intero.
+3) **Logo hero**: nell’HTML `.hero-logo` usa una **clamp specifica** + una clamp diversa in mobile; nel nostro `eden.css` è diventato `width: min(720px, 78vw)` → **scala in modo diverso** e può risultare “troppo grande”.
 
 ---
 
-### Step 3 — Reintrodurre le “foglie” come in GitHub (se sono PNG/layer CSS)
-Obiettivo: replicare esattamente “le foglie” che vedi nella versione GitHub.
+## Cosa implementerò (modifiche precise, 1:1)
+### 1) Portare `useHeroCanvas()` 1:1 (sprite canvas + preload)
+**File:** `src/components/eden/EdenLanding.tsx`
 
-Azioni (dipendono dall’HTML sorgente):
-- Se GitHub usa immagini:
-  - aggiungere nel markup (`EdenLanding.tsx`) un layer decorativo tipo:
-    - `<img class="leaf leaf--1" src="/eden/leaf.png" ... />`
-    - `<img class="leaf leaf--source" src="/eden/leaf-source.png" ... />`
-  - portare CSS posizionamento + animazioni (drift, blur, opacity, mix-blend)
-- Se GitHub usa canvas:
-  - confrontare i parametri (count, size, speed, colori) e allinearli
-  - eventualmente sostituire le “foglie shape” con sprite PNG drawImage (più 1:1).
+- Sostituire l’attuale `useHeroCanvas()` (foglie bezier) con la versione del repo:
+  - variabili: `leafSprites`, `leafAspect`, `leafReady`
+  - costanti: `LEAF_OPACITY = 0.42`, `LEAF_TINT_HUES = [115,123,131,139,147]`
+  - funzioni: `clamp`, `buildLeafSprites(img)`, `drawLeaf(l)` che usa:
+    - `baseH = 19.5` (come commento HTML: “Target requested: baseH = 19.50px”)
+    - selezione sprite in base a `l.hue`
+    - `ctx.globalAlpha = LEAF_OPACITY`
+  - preload: `const leafImg = new Image(); leafImg.src = '/eden/leaf-source.png'`
+    - `onload`: `buildLeafSprites(...)`, `resizeCanvas()`, `requestAnimationFrame(animate)`
+    - `onerror`: fallback `resizeCanvas()` + `requestAnimationFrame(animate)` (le foglie non si vedranno se manca l’immagine, ma il resto sì)
+- Tenere glows + wind-on-mouse identici al repo.
+- Assicurare cleanup completo (removeEventListener, cancelAnimationFrame) per evitare leak.
 
-Deliverable: foglie identiche per numero/posizione/animazione rispetto a GitHub.
-
----
-
-### Step 4 — “Cambio colore” / cambio atmosfera: allineamento 1:1
-Obiettivo: ottenere il cambio colore esatto che ti manca (probabilmente legato a Mare/Terra o a sezioni).
-
-Azioni:
-- Dal tuo codice già esiste `data-mood={activeTab}` e CSS per `.cucina-atmo--mare/--terra`.
-- Se su GitHub il cambio colore coinvolge **anche lo sfondo globale** (hero/canvas/aurora), porterò:
-  - classi su `body` o su `.eden-theme` (es. `theme-mare` / `theme-terra`)
-  - aggiornamento dei CSS variables (`--eden-emerald`, `--eden-gold`, gradienti) in base al mood
-  - eventuale crossfade cinematica (opacity + filter + transition timing)
-
-Deliverable: quando passi Mare/Terra (o quando scrolli nella sezione), i colori e l’atmosfera cambiano esattamente come in GitHub.
+**Risultato atteso:** foglie animate identiche (densità, dimensione, opacità, drift, wind su mouse) come nel repo.
 
 ---
 
-### Step 5 — “Sezione del modulo sotto” (quale modulo?)
-Nel tuo `EdenLanding.tsx` c’è già una sezione eventi con form (`#eventi`), ma tu dici che “manca la sezione del modulo sotto”: quindi su GitHub c’è **un altro blocco** (o una posizione diversa) che ora non stai vedendo.
+### 2) Rimuovere il layer DOM “eden-leaves” (non presente nell’HTML)
+**File:** `src/components/eden/EdenLanding.tsx`
 
-Azioni:
-- Con l’HTML sorgente, identificherò il blocco (“modulo”):
-  - se è un form diverso (contatti, newsletter, prenota, ecc.)
-  - se è un “module section” grafico (cards/moduli)
-  - se è semplicemente posizionato sotto un’altra sezione (ordine differente)
-- Poi:
-  - porto markup 1:1 dentro `EdenLanding.tsx`
-  - porto CSS 1:1 dentro `eden.css`
-  - collego eventuale logica (floating labels / validation / reveal)
+- Eliminare questo blocco:
+  ```tsx
+  <div className="eden-leaves" ...>
+    <img ... src="/eden/leaf.png" />
+    <img ... src="/eden/leaf-source.png" />
+  </div>
+  ```
+Perché nel repo le foglie sono **solo** canvas sprites, non overlay DOM.
 
-Deliverable: la sezione modulo appare nello stesso punto e con lo stesso stile della versione GitHub.
-
----
-
-### Step 6 — Verifica tecnica (per evitare “si vede bianco / non parte niente”)
-Checklist rapida da fare subito dopo l’implementazione:
-- Background: canvas + aurora + LED visibili (nessun layer coperto)
-- Foglie visibili (canvas o PNG)
-- Parallax: attivo su scroll (non su mouse)
-- Sezioni: Eden, Cucina, Gallery, Eventi (modulo), Recensioni, Contatti presenti
-- Mobile: menu apre/chiude, nav non rompe layout
-- Nessun errore console (specialmente su canvas/clipboard)
+**Risultato atteso:** niente “foglie finte” sovrapposte; tutto torna canvas-driven.
 
 ---
 
-## Informazioni minime che mi servono per chiudere 1:1 senza andare “a tentativi”
-Senza questo, posso solo “provare fix generici”, ma tu chiedi 1:1.
+### 3) Ripristinare lo sfondo del canvas 1:1 (fisso, scurissimo)
+**File:** `src/styles/eden.css`
 
-1) Incolla qui il **link GitHub esatto** (repo + path del file HTML) oppure forniscimi il **raw URL** del file.
-2) Dimmi qual è la “sezione del modulo sotto” (nome sezione o screenshot): è il form eventi? un form contatti? prenota?
+- Aggiornare `#eden-hero-canvas { background: ... }` per matchare l’HTML:
+  - usare HSL equivalenti ai 4 colori (convertiti) oppure mantenere i colori tramite `color-mix`/hex (ma in questo progetto preferiamo HSL).
+  - mantenere esattamente la stessa struttura:
+    - radial at `0 0`, `100% 0`, `0 100%` + base night.
+- Rimuovere/neutralizzare le variabili “mood globale” (`--eden-bg-nw/ne/sw`) e le regole:
+  - `.eden-theme[data-mood="mare"] { ... }`
+  - `.eden-theme[data-mood="terra"] { ... }`
+  
+  Perché hai richiesto **sfondo 1:1 fisso** come l’HTML.
+
+**Risultato atteso:** background identico al repo (stesso “nero” + stesse macchie colore in angoli).
 
 ---
 
-## File che toccherò quando implemento
-- `src/styles/eden.css`
-  - override full-bleed `#root` quando EDEN è montato
-  - layer foglie (se PNG) + animazioni
-  - mood/color crossfade globale
-  - eventuali sezioni mancanti portate dall’HTML
+### 4) Ripristinare dimensione logo hero 1:1 (desktop + mobile)
+**File:** `src/styles/eden.css`
+
+- Allineare `.hero-logo` a quanto c’è nell’HTML:
+  - desktop: `width: clamp(320px, 40vw, 760px); max-width: 92vw;`
+  - mobile (`@media (max-width:700px)`): `width: clamp(240px, 72vw, 440px);`
+- Verificare anche eventuali padding/margini in `.hero-content` / `.hero-title` per evitare scaling percepito diverso.
+
+**Risultato atteso:** logo “né troppo grande né troppo piccolo”, esattamente come repo.
+
+---
+
+### 5) Verifica “full-bleed” e stacking (perché se lo stacking è sbagliato sembra “manca tutto”)
+**File:** `src/styles/eden.css`
+
+- Confermare questi invarianti (già presenti ma li verificherò con ordine e specificità CSS):
+  - `body.eden-body { background: #02040a; overflow-x:hidden; }`
+  - `body.eden-body #root { max-width:none; padding:0; margin:0; }`
+  - z-index background layers:
+    - canvas: `z-index:-3`
+    - aurora: `z-index:-2`
+    - led: `z-index:-1`
+    - contenuto `.page`: sopra
+- Rimuovere eventuali regole duplicate/obsolete di `.eden-leaves` una volta eliminato il markup.
+
+**Risultato atteso:** canvas/aurora/led visibili sempre e non “coperti” da altri layer.
+
+---
+
+## Test (obbligatorio, end-to-end)
+1) Apri `/` e verifica:
+   - sfondo scuro identico (angoli colorati + nero pieno)
+   - foglie animate visibili (non statiche), con drift continuo
+   - muovi il mouse sul hero: le foglie devono reagire (wind) come nel repo
+2) Resize mobile (<700px):
+   - logo hero ridimensionato come repo (clamp mobile)
+   - nessun taglio del canvas, nessun “bianco” dietro
+3) Scroll pagina:
+   - il canvas resta fixed dietro (non scompare dopo hero)
+   - performance ok (nessun lag evidente)
+4) Console:
+   - nessun errore su caricamento `/eden/leaf-source.png` (se 404, foglie non compariranno: lo segnalo subito)
+
+---
+
+## File che toccherò
 - `src/components/eden/EdenLanding.tsx`
-  - inserimento markup foglie/layers (se previsti in HTML)
-  - applicazione classi mood globali
-  - inserimento sezione “modulo sotto” 1:1 (ordine e markup)
-- `public/eden/*`
-  - aggiunta HTML di riferimento e qualsiasi asset extra usato dal GitHub
+  - `useHeroCanvas()` 1:1 con sprite + preload
+  - rimozione `.eden-leaves` DOM
+- `src/styles/eden.css`
+  - background canvas 1:1 fisso
+  - `.hero-logo` clamp 1:1 (desktop + mobile)
+  - pulizia CSS `.eden-leaves` e rimozione mood globale non presente nel repo
 
+---
+
+## Criteri di accettazione (non negoziabili)
+- Sfondo: **stesso “nero”** e stessi radial come `public/eden/nuovo_1-2.html`
+- Foglie: **animate su canvas con sprite** (non overlay immagini)
+- Logo hero: **stessa dimensione** dell’HTML (clamp desktop + clamp mobile)
+- Nessun effetto “mood globale” sul background (sfondo fisso come repo)
