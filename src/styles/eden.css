@@ -2955,3 +2955,187 @@ body.eden-lock {
   line-height: 1.7;
 }
 
+/* ═══════════════════════════════════════════════
+   INTRO CINEMATOGRAFICA (5s)
+═══════════════════════════════════════════════ */
+
+.eden-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background: hsl(var(--eden-night));
+  overflow: hidden;
+}
+
+.eden-intro.is-exiting {
+  animation: edenIntroFadeOut var(--eden-intro-exit-ms, 520ms) ease forwards;
+}
+
+.eden-intro-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.08) contrast(1.06) brightness(0.92);
+  transform: scale(1.02);
+}
+
+.eden-intro-vignette {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0%, hsl(0 0% 0% / 0.55) 70%, hsl(0 0% 0% / 0.78) 100%),
+    radial-gradient(circle at 12% 18%, hsl(40 100% 85% / 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 88% 78%, hsl(0 0% 100% / 0.08) 0%, transparent 58%);
+  pointer-events: none;
+}
+
+.eden-intro-logo {
+  position: relative;
+  width: min(520px, 74vw);
+  height: auto;
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.985);
+  filter: drop-shadow(0 18px 50px hsl(0 0% 0% / 0.55));
+  transition: opacity 520ms ease, transform 520ms ease;
+}
+
+.eden-intro-logo.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: edenIntroLogoGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes edenIntroLogoGlow {
+  0%,
+  100% {
+    filter:
+      drop-shadow(0 18px 50px hsl(0 0% 0% / 0.55))
+      drop-shadow(0 0 0px hsl(40 100% 85% / 0));
+  }
+  50% {
+    filter:
+      drop-shadow(0 18px 50px hsl(0 0% 0% / 0.55))
+      drop-shadow(0 0 34px hsl(40 100% 85% / 0.28))
+      drop-shadow(0 0 62px hsl(0 0% 100% / 0.12));
+  }
+}
+
+.eden-intro-glow {
+  position: absolute;
+  inset: -20%;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(circle at 50% 55%, hsl(40 100% 85% / 0.85) 0%, transparent 58%),
+    radial-gradient(circle at 50% 45%, hsl(0 0% 100% / 0.55) 0%, transparent 62%),
+    repeating-linear-gradient(
+      90deg,
+      hsl(40 100% 85% / 0.16) 0 10px,
+      hsl(0 0% 100% / 0.07) 10px 18px,
+      transparent 18px 34px
+    );
+  filter: blur(10px);
+}
+
+.eden-intro-glow.is-active {
+  animation: edenIntroGlowFlash var(--eden-intro-exit-ms, 520ms) ease both;
+}
+
+@keyframes edenIntroGlowFlash {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  35% {
+    opacity: 0.95;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes edenIntroFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.eden-intro-skip {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid hsl(0 0% 100% / 0.18);
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    hsl(225 64% 3% / 0.68);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 45px hsl(0 0% 0% / 0.65);
+  color: hsl(39 26% 92%);
+  cursor: pointer;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.eden-intro-skip:hover {
+  border-color: hsl(40 100% 85% / 0.35);
+}
+
+.eden-intro-progress {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 44px));
+  z-index: 2;
+}
+
+.eden-intro-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background: hsl(0 0% 0% / 0.25);
+  overflow: hidden;
+  box-shadow: 0 14px 40px hsl(0 0% 0% / 0.45);
+}
+
+.eden-intro-progress-bar {
+  height: 100%;
+  width: 0%;
+  background:
+    linear-gradient(90deg, hsl(40 100% 85% / 0.95), hsl(0 0% 100% / 0.75));
+  box-shadow: 0 0 26px hsl(40 100% 85% / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eden-intro.is-exiting {
+    animation: none;
+  }
+
+  .eden-intro-logo {
+    transition: none;
+  }
+
+  .eden-intro-logo.is-visible {
+    animation: none;
+  }
+
+  .eden-intro-glow.is-active {
+    animation: none;
+    opacity: 0;
+  }
+}
+
