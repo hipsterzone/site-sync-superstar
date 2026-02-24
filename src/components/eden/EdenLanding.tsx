@@ -638,21 +638,58 @@ export default function EdenLanding() {
     const form = eventFormRef.current;
     if (!form) return;
 
-    const required = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(".ep-input[required]"));
-    const allFilled = required.every((f) => f.value.trim() !== "");
+    const getSelectedOccasion = () => {
+      const checked = form.querySelector<HTMLInputElement>("input[name='tipo']:checked");
+      return checked?.value ?? "";
+    };
 
-    if (!allFilled) {
+    const normalizePhone = (p: string) => String(p || "").trim().replace(/\s+/g, " ");
+
+    const payload = {
+      tipo: getSelectedOccasion(),
+      nome: (form.querySelector<HTMLInputElement>("#ep-nome")?.value ?? "").trim(),
+      tel: normalizePhone(form.querySelector<HTMLInputElement>("#ep-tel")?.value ?? ""),
+      ospiti: String(form.querySelector<HTMLInputElement>("#ep-ospiti")?.value ?? "").trim(),
+      note: (form.querySelector<HTMLTextAreaElement>("#ep-note")?.value ?? "").trim(),
+    };
+
+    const validateEvent = (p: typeof payload) => {
+      if (!p.tipo) return "Seleziona l'occasione.";
+      if (!p.nome) return "Inserisci nome e cognome.";
+      if (!p.tel) return "Inserisci un telefono/WhatsApp.";
+      if (!p.ospiti) return "Inserisci il numero di ospiti.";
+      if (!p.note) return "Inserisci qualche dettaglio (note).";
+      return "";
+    };
+
+    const err = validateEvent(payload);
+    if (err) {
       toast({
-        title: "Completa i campi richiesti",
-        description: "Per inviare la richiesta, compila tutti i campi del form.",
+        title: "Controlla il form",
+        description: err,
         variant: "destructive",
       });
       return;
     }
 
+    const msg = [
+      "Richiesta EVENTO · EDEN",
+      "",
+      `Occasione: ${payload.tipo || "-"}`,
+      `Nome: ${payload.nome || "-"}`,
+      `Telefono: ${payload.tel || "-"}`,
+      `Ospiti: ${payload.ospiti || "-"}`,
+      "",
+      "Dettagli:",
+      payload.note || "-",
+    ].join("\n");
+
+    const waUrl = `https://wa.me/393497152524?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank", "noopener");
+
     toast({
-      title: "Richiesta inviata",
-      description: "Grazie! Ti ricontatteremo al più presto.",
+      title: "Richiesta pronta su WhatsApp",
+      description: "Si è aperta una nuova scheda con il messaggio precompilato.",
     });
   }
 
