@@ -30,13 +30,29 @@ function useRevealOnScroll(selector: string) {
     const els = Array.from(document.querySelectorAll<HTMLElement>(selector));
     if (!els.length) return;
 
+    const applyStagger = (root: HTMLElement) => {
+      // Make stagger containers visible and index their items.
+      const containers = root.matches(".reveal-stagger")
+        ? [root]
+        : Array.from(root.querySelectorAll<HTMLElement>(".reveal-stagger"));
+
+      containers.forEach((container) => {
+        container.classList.add("visible");
+        const items = Array.from(container.querySelectorAll<HTMLElement>(".stagger-item"));
+        items.forEach((item, i) => {
+          item.style.setProperty("--i", String(i));
+        });
+      });
+    };
+
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (entry.target as HTMLElement).classList.add("visible");
-            obs.unobserve(entry.target);
-          }
+          if (!entry.isIntersecting) return;
+          const el = entry.target as HTMLElement;
+          el.classList.add("visible");
+          applyStagger(el);
+          obs.unobserve(entry.target);
         });
       },
       { threshold: 0.15 },
@@ -453,26 +469,8 @@ export default function EdenLanding() {
   });
   useRevealOnScroll(".reveal-on-scroll");
 
-  // Stagger reveal (gallery)
-  useEffect(() => {
-    const els = Array.from(document.querySelectorAll<HTMLElement>(".reveal-stagger"));
-    if (!els.length) return;
+  // Stagger reveal: gestito da useRevealOnScroll (quando una sezione entra, attiva anche i .reveal-stagger interni)
 
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (entry.target as HTMLElement).classList.add("visible");
-            obs.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12 },
-    );
-
-    els.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
 
   // Scroll-driven parallax layers (replaces mousemove 3D)
   useEffect(() => {
@@ -785,63 +783,89 @@ export default function EdenLanding() {
     setGalleryFilter(next);
   }
 
-  function onEventSubmit() {
-    const form = eventFormRef.current;
-    if (!form) return;
-
-    const getSelectedOccasion = () => {
-      const checked = form.querySelector<HTMLInputElement>("input[name='tipo']:checked");
-      return checked?.value ?? "";
-    };
-
+  const getEventPayloadFromForm = (form: HTMLFormElement) => {
+    const checked = form.querySelector<HTMLInputElement>("input[name='tipo']:checked");
     const normalizePhone = (p: string) => String(p || "").trim().replace(/\s+/g, " ");
 
-    const payload = {
-      tipo: getSelectedOccasion(),
-      nome: (form.querySelector<HTMLInputElement>("#ep-nome")?.value ?? "").trim(),
-      tel: normalizePhone(form.querySelector<HTMLInputElement>("#ep-tel")?.value ?? ""),
-      ospiti: String(form.querySelector<HTMLInputElement>("#ep-ospiti")?.value ?? "").trim(),
-      note: (form.querySelector<HTMLTextAreaElement>("#ep-note")?.value ?? "").trim(),
+    return {
+      tipo: checked?.value ?? "",
+      nome: (form.querySelector<HTMLInputElement>("#ep-nome")?.value ?? "").trim().slice(0, 80),
+      tel: normalizePhone(form.querySelector<HTMLInputElement>("#ep-tel")?.value ?? "").slice(0, 40),
+      ospiti: String(form.querySelector<HTMLInputElement>("#ep-ospiti")?.value ?? "").trim().slice(0, 6),
+      note: (form.querySelector<HTMLTextAreaElement>("#ep-note")?.value ?? "").trim().slice(0, 900),
     };
+  };
 
-    const validateEvent = (p: typeof payload) => {
-      if (!p.tipo) return "Seleziona l'occasione.";
-      if (!p.nome) return "Inserisci nome e cognome.";
-      if (!p.tel) return "Inserisci un telefono/WhatsApp.";
-      if (!p.ospiti) return "Inserisci il numero di ospiti.";
-      if (!p.note) return "Inserisci qualche dettaglio (note).";
-      return "";
-    };
+  const validateEventPayload = (p: ReturnType<typeof getEventPayloadFromForm>) => {
+    if (!p.tipo) return "Seleziona l'occasione.";
+    if (!p.nome) return "Inserisci nome e cognome.";
+    if (!p.tel) return "Inserisci un telefono/WhatsApp.";
+    if (!p.ospiti) return "Inserisci il numero di ospiti.";
+    if (!p.note) return "Inserisci qualche dettaglio (note).";
+    return "";
+  };
 
-    const err = validateEvent(payload);
-    if (err) {
-      toast({
-        title: "Controlla il form",
-        description: err,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const msg = [
+  const buildEventMessage = (p: ReturnType<typeof getEventPayloadFromForm>) => {
+    return [
       "Richiesta EVENTO · EDEN",
       "",
-      `Occasione: ${payload.tipo || "-"}`,
-      `Nome: ${payload.nome || "-"}`,
-      `Telefono: ${payload.tel || "-"}`,
-      `Ospiti: ${payload.ospiti || "-"}`,
+      `Occasione: ${p.tipo || "-"}`,
+      `Nome: ${p.nome || "-"}`,
+      `Telefono: ${p.tel || "-"}`,
+      `Ospiti: ${p.ospiti || "-"}`,
       "",
       "Dettagli:",
-      payload.note || "-",
+      p.note || "-",
     ].join("\n");
+  };
 
+  const prepareEventWhatsApp = () => {
+    const form = eventFormRef.current;
+    if (!form) return null;
+
+    const payload = getEventPayloadFromForm(form);
+    const err = validateEventPayload(payload);
+    if (err) {
+      toast({ title: "Controlla il form", description: err, variant: "destructive" });
+      return null;
+    }
+
+    const msg = buildEventMessage(payload);
     const waUrl = `https://wa.me/393497152524?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, "_blank", "noopener");
+    return { msg, waUrl };
+  };
 
+  function onEventSubmit() {
+    const prepared = prepareEventWhatsApp();
+    if (!prepared) return;
+
+    window.open(prepared.waUrl, "_blank", "noopener");
     toast({
       title: "Richiesta pronta su WhatsApp",
       description: "Si è aperta una nuova scheda con il messaggio precompilato.",
     });
+  }
+
+  async function onEventCopyMessage() {
+    const prepared = prepareEventWhatsApp();
+    if (!prepared) return;
+
+    try {
+      await navigator.clipboard.writeText(prepared.msg);
+      toast({ title: "Messaggio copiato", description: "Ora puoi incollarlo su WhatsApp." });
+    } catch {
+      toast({
+        title: "Copia non disponibile",
+        description: "Non riesco a copiare il messaggio. Puoi selezionarlo dal form e copiarlo manualmente.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function onEventOpenWhatsApp() {
+    const prepared = prepareEventWhatsApp();
+    if (!prepared) return;
+    window.open(prepared.waUrl, "_blank", "noopener");
   }
 
   async function handleCopyAddress() {
@@ -960,10 +984,12 @@ export default function EdenLanding() {
             </div>
 
             <div className="hero-scroll parallax-layer" data-parallax="0.18">
-              <div className="hero-scroll-indicator">
-                <span />
+              <div className="hero-scroll-inner">
+                <div className="hero-scroll-indicator">
+                  <span />
+                </div>
+                <span>Scorri nel nostro Eden</span>
               </div>
-              <span>Scorri nel nostro Eden</span>
             </div>
           </section>
 
@@ -978,22 +1004,22 @@ export default function EdenLanding() {
               </p>
 
               <div className="eden-layout">
-                <div className="eden-text">
-                  <div className="eden-point">
+                <div className="eden-text reveal-stagger">
+                  <div className="eden-point stagger-item">
                     <h3>Pietra viva, luce morbida</h3>
                     <p>
                       Le pareti in pietra e le luci soffuse creano un&rsquo;atmosfera raccolta, elegante ma mai fredda: un Eden
                       contemporaneo che nasce dalla Puglia.
                     </p>
                   </div>
-                  <div className="eden-point">
+                  <div className="eden-point stagger-item">
                     <h3>Dettagli non scontati</h3>
                     <p>
                       Tratti di verde, toni perlacei, richiami ai trulli e agli ulivi: l&rsquo;ambiente interno parla la stessa
                       lingua dei paesaggi pugliesi.
                     </p>
                   </div>
-                  <div className="eden-point">
+                  <div className="eden-point stagger-item">
                     <h3>Spazio per cene ed eventi</h3>
                     <p>
                       La sala si presta tanto alla cena a due quanto alle tavolate per compleanni, lauree e cerimonie:
@@ -1010,6 +1036,54 @@ export default function EdenLanding() {
                       <span className="dot" />
                       <span>Adelfia · Puglia</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* BLOCCO 2B · STORIA DELL'EDEN */}
+          <section id="storia" className="story-section reveal-on-scroll">
+            <div className="story-shell">
+              <div className="story-grid">
+                <div className="story-copy">
+                  <div className="story-kicker">La storia</div>
+                  <h2 className="story-title">
+                    Eden nasce da una stanza in pietra
+                    <br />
+                    <em>e da una promessa.</em>
+                  </h2>
+                  <div className="story-body">
+                    <p>
+                      Prima di essere un ristorante, Eden è stato un&rsquo;intenzione: prendere la solidità della pietra pugliese e
+                      vestirla di luce. Un luogo raccolto, dove il tempo rallenta e l&rsquo;attenzione torna alle cose essenziali.
+                    </p>
+                    <p>
+                      Nel tempo, quella stanza è diventata una sala, poi un rito: tavoli curati, calore umano, sapori
+                      mediterranei. Eden è il posto in cui si entra per cenare &mdash; e si resta per celebrare.
+                    </p>
+                    <p>
+                      Oggi raccontiamo la Puglia con due linguaggi: l&rsquo;ambiente (pietra, volte, verde) e il piatto (materie
+                      prime, cotture, dettagli). Il resto lo fa la compagnia: chi scegli di portare con te.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="story-chapters reveal-stagger" aria-label="Capitoli della storia di Eden">
+                  <div className="chapter-card stagger-item">
+                    <div className="chapter-num">01</div>
+                    <div className="chapter-title">La pietra</div>
+                    <div className="chapter-text">Un interno autentico, scolpito dal territorio. Eleganza senza rigidità.</div>
+                  </div>
+                  <div className="chapter-card stagger-item">
+                    <div className="chapter-num">02</div>
+                    <div className="chapter-title">La luce</div>
+                    <div className="chapter-text">Atmosfera calda, dettagli perlacei, un ritmo che invita a restare.</div>
+                  </div>
+                  <div className="chapter-card stagger-item">
+                    <div className="chapter-num">03</div>
+                    <div className="chapter-title">Il rito</div>
+                    <div className="chapter-text">Cene, eventi, brindisi: un posto che si modella sulle tue occasioni.</div>
                   </div>
                 </div>
               </div>
@@ -1318,6 +1392,94 @@ export default function EdenLanding() {
             </div>
           </section>
 
+          {/* BLOCCO 6 · SOCIAL PROOF & RECENSIONI */}
+          <section id="recensioni" className="reviews-premium reveal-on-scroll">
+            <div className="reviews-shell">
+              <div className="reviews-header">
+                <h2 className="reviews-title">
+                  L&rsquo;eccellenza,<br />
+                  <em>riconosciuta.</em>
+                </h2>
+                <div className="reviews-stats">
+                  <div className="stat-item">
+                    <span className="stat-val" data-target="4.5">
+                      0
+                    </span>
+                    <span className="stat-lbl">Google (340+ Recensioni)</span>
+                  </div>
+                  <div className="stat-divider" />
+                  <div className="stat-item">
+                    <span className="stat-val" data-target="4.9">
+                      0
+                    </span>
+                    <span className="stat-lbl">Facebook (270+ Recensioni)</span>
+                  </div>
+                  <div className="stat-divider" />
+                  <div className="stat-item">
+                    <span className="stat-val" data-target="8000" data-format="plain">
+                      0
+                    </span>
+                    <span className="stat-lbl">Follower sui Social</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="reviews-grid reveal-stagger">
+                <div className="review-card stagger-item">
+                  <div className="rc-quote">“</div>
+                  <p className="rc-text">
+                    Sala elegante, atmosfera calda, servizio sempre presente ma mai invadente. Il posto perfetto per una
+                    festa che resta nei ricordi di tutti.
+                  </p>
+                  <div className="rc-meta" aria-label="Valutazione">
+                    <div className="rc-stars" aria-hidden="true">
+                      ★★★★★
+                    </div>
+                    <div className="rc-badge">Cliente verificato</div>
+                  </div>
+                  <div className="rc-author">
+                    <strong>Location da sogno</strong>
+                    <span>Evento privato in sala</span>
+                  </div>
+                </div>
+                <div className="review-card stagger-item">
+                  <div className="rc-quote">“</div>
+                  <p className="rc-text">
+                    Dalla scelta dei piatti al brindisi finale, Miriam e lo staff ci hanno seguito con estrema attenzione.
+                    Piatti curati, porzioni giuste, tempi perfetti.
+                  </p>
+                  <div className="rc-meta" aria-label="Valutazione">
+                    <div className="rc-stars" aria-hidden="true">
+                      ★★★★★
+                    </div>
+                    <div className="rc-badge">Cliente verificato</div>
+                  </div>
+                  <div className="rc-author">
+                    <strong>Cucina e accoglienza</strong>
+                    <span>Cena tra amici</span>
+                  </div>
+                </div>
+                <div className="review-card stagger-item">
+                  <div className="rc-quote">“</div>
+                  <p className="rc-text">
+                    Abbiamo gestito tutto in anticipo. La sera dell'evento era già tutto pronto, senza imprevisti e con una
+                    magia unica per la nostra laurea.
+                  </p>
+                  <div className="rc-meta" aria-label="Valutazione">
+                    <div className="rc-stars" aria-hidden="true">
+                      ★★★★★
+                    </div>
+                    <div className="rc-badge">Cliente verificato</div>
+                  </div>
+                  <div className="rc-author">
+                    <strong>Festa impeccabile</strong>
+                    <span>Festa di Laurea</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* BLOCCO 5 · EVENTI PREMIUM (Editorial Style) */}
           <section id="eventi" className="ep-section reveal-on-scroll">
             <div className="ep-shell">
@@ -1417,95 +1579,19 @@ export default function EdenLanding() {
                       <span>Invia la richiesta</span>
                       <span className="ep-btn-arrow">→</span>
                     </button>
+
+                    <div className="ep-fallbacks" aria-label="Alternative di contatto">
+                      <button type="button" className="ep-fallback" onClick={onEventOpenWhatsApp}>
+                        Apri WhatsApp
+                      </button>
+                      <button type="button" className="ep-fallback" onClick={onEventCopyMessage}>
+                        Copia messaggio
+                      </button>
+                      <a className="ep-fallback" href="tel:+393497152524">
+                        Chiama
+                      </a>
+                    </div>
                   </form>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* BLOCCO 6 · SOCIAL PROOF & RECENSIONI */}
-          <section id="recensioni" className="reviews-premium reveal-on-scroll">
-            <div className="reviews-shell">
-              <div className="reviews-header">
-                <h2 className="reviews-title">
-                  L&rsquo;eccellenza,<br />
-                  <em>riconosciuta.</em>
-                </h2>
-                <div className="reviews-stats">
-                  <div className="stat-item">
-                    <span className="stat-val" data-target="4.5">
-                      0
-                    </span>
-                    <span className="stat-lbl">Google (340+ Recensioni)</span>
-                  </div>
-                  <div className="stat-divider" />
-                  <div className="stat-item">
-                    <span className="stat-val" data-target="4.9">
-                      0
-                    </span>
-                    <span className="stat-lbl">Facebook (270+ Recensioni)</span>
-                  </div>
-                  <div className="stat-divider" />
-                  <div className="stat-item">
-                    <span className="stat-val" data-target="8000" data-format="plain">
-                      0
-                    </span>
-                    <span className="stat-lbl">Follower sui Social</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="reviews-grid">
-                <div className="review-card">
-                  <div className="rc-quote">“</div>
-                  <p className="rc-text">
-                    Sala elegante, atmosfera calda, servizio sempre presente ma mai invadente. Il posto perfetto per una
-                    festa che resta nei ricordi di tutti.
-                  </p>
-                  <div className="rc-meta" aria-label="Valutazione">
-                    <div className="rc-stars" aria-hidden="true">
-                      ★★★★★
-                    </div>
-                    <div className="rc-badge">Cliente verificato</div>
-                  </div>
-                  <div className="rc-author">
-                    <strong>Location da sogno</strong>
-                    <span>Evento privato in sala</span>
-                  </div>
-                </div>
-                <div className="review-card">
-                  <div className="rc-quote">“</div>
-                  <p className="rc-text">
-                    Dalla scelta dei piatti al brindisi finale, Miriam e lo staff ci hanno seguito con estrema attenzione.
-                    Piatti curati, porzioni giuste, tempi perfetti.
-                  </p>
-                  <div className="rc-meta" aria-label="Valutazione">
-                    <div className="rc-stars" aria-hidden="true">
-                      ★★★★★
-                    </div>
-                    <div className="rc-badge">Cliente verificato</div>
-                  </div>
-                  <div className="rc-author">
-                    <strong>Cucina e accoglienza</strong>
-                    <span>Cena tra amici</span>
-                  </div>
-                </div>
-                <div className="review-card">
-                  <div className="rc-quote">“</div>
-                  <p className="rc-text">
-                    Abbiamo gestito tutto in anticipo. La sera dell'evento era già tutto pronto, senza imprevisti e con una
-                    magia unica per la nostra laurea.
-                  </p>
-                  <div className="rc-meta" aria-label="Valutazione">
-                    <div className="rc-stars" aria-hidden="true">
-                      ★★★★★
-                    </div>
-                    <div className="rc-badge">Cliente verificato</div>
-                  </div>
-                  <div className="rc-author">
-                    <strong>Festa impeccabile</strong>
-                    <span>Festa di Laurea</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1514,14 +1600,14 @@ export default function EdenLanding() {
           {/* BLOCCO 7 · CONTATTI */}
           <section id="contatti" className="contact-premium reveal-on-scroll">
             <div className="contact-shell">
-              <div className="contact-grid">
-                <div className="contact-info">
+              <div className="contact-grid reveal-stagger">
+                <div className="contact-info stagger-item">
                   <h2 className="contact-title">
                     Ti aspettiamo<br />
                     <em>all&rsquo;Eden.</em>
                   </h2>
-                  <div className="contact-list">
-                    <div className="c-item">
+                  <div className="contact-list reveal-stagger">
+                    <div className="c-item stagger-item">
                       <span className="c-lbl">Indirizzo</span>
                       <span className="c-val">
                         Via Santa Maria della Stella, 66
@@ -1529,7 +1615,7 @@ export default function EdenLanding() {
                         70010 Adelfia (BA)
                       </span>
                     </div>
-                    <div className="c-item">
+                    <div className="c-item stagger-item">
                       <span className="c-lbl">Prenotazioni</span>
                       <span className="c-val">
                         <a href="tel:+390805248160">080 524 8160</a>
@@ -1539,7 +1625,7 @@ export default function EdenLanding() {
                         </a>
                       </span>
                     </div>
-                    <div className="c-item">
+                    <div className="c-item stagger-item">
                       <span className="c-lbl">Orari</span>
                       <span className="c-val">
                         Lunedì - Domenica: 06:30 – 01:00
@@ -1550,7 +1636,7 @@ export default function EdenLanding() {
                   </div>
                 </div>
 
-                <div className="contact-map">
+                <div className="contact-map stagger-item">
                   <div className="directions-card" aria-label="Indicazioni per EDEN">
                     <div className="directions-top">
                       <div>

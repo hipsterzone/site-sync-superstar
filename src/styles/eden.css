@@ -445,6 +445,34 @@ body.eden-body #root {
   pointer-events: none;
 }
 
+.hero-scroll-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: scrollBobbing 2.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes scrollBobbing {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translate3d(0, -9px, 0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scroll-inner {
+    animation: none;
+  }
+}
+
 .hero-scroll-indicator {
   width: 32px;
   height: 32px;
@@ -728,6 +756,123 @@ body.eden-body #root {
   border-radius: 50%;
   background: radial-gradient(circle at 30% 0%, hsl(0 0% 100%), hsl(var(--eden-emerald)));
   box-shadow: 0 0 0 3px hsl(var(--eden-emerald) / 0.6);
+}
+
+/* ═══════════════════════════════════════════════
+   BLOCCO 2B · STORIA (NARRATIVA)
+═══════════════════════════════════════════════ */
+
+.story-section {
+  position: relative;
+  padding: 80px 18px 110px;
+  overflow: hidden;
+}
+
+.story-section::before {
+  content: "";
+  position: absolute;
+  inset: -10% 0 auto 0;
+  height: 60%;
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.14) 0%, transparent 55%),
+    radial-gradient(circle at 80% 10%, hsl(var(--eden-gold) / 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 10% 90%, hsl(var(--eden-emerald-soft) / 0.12) 0%, transparent 60%);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.story-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.story-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  gap: 44px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .story-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+}
+
+.story-kicker {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: hsl(var(--eden-gold));
+  margin-bottom: 14px;
+}
+
+.story-title {
+  font-family: var(--eden-font-serif);
+  font-size: clamp(1.9rem, 3vw + 0.7rem, 2.8rem);
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  color: hsl(var(--eden-pearl));
+}
+
+.story-title em {
+  font-style: italic;
+  color: hsl(36 60% 98% / 0.95);
+}
+
+.story-body {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+  max-width: 46rem;
+  color: hsl(var(--eden-text-soft));
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.story-chapters {
+  border-radius: 26px;
+  border: 1px solid hsl(0 0% 100% / 0.08);
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.08) 0%, transparent 55%),
+    hsl(225 40% 6% / 0.5);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 55px hsl(0 0% 0% / 0.55);
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.chapter-card {
+  border-radius: 18px;
+  border: 1px solid hsl(0 0% 100% / 0.1);
+  background: hsl(0 0% 0% / 0.18);
+  padding: 16px;
+}
+
+.chapter-num {
+  font-size: 0.68rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(var(--eden-gold));
+}
+
+.chapter-title {
+  margin-top: 8px;
+  font-family: var(--eden-font-serif);
+  font-size: 1.25rem;
+  color: hsl(var(--eden-pearl));
+}
+
+.chapter-text {
+  margin-top: 6px;
+  color: hsl(var(--eden-text-soft));
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1787,6 +1932,50 @@ body.eden-body #root {
 
 .ep-submit-btn:hover .ep-btn-arrow {
   transform: translateX(5px);
+}
+
+.ep-fallbacks {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ep-fallback {
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+  border-radius: 999px;
+  padding: 10px 12px;
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background: hsl(0 0% 0% / 0.18);
+  color: hsl(36 60% 98% / 0.9);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.ep-fallback:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--eden-gold) / 0.55);
+  background: hsl(var(--eden-gold) / 0.08);
+}
+
+.ep-fallback:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ep-fallback,
+  .ep-fallback:hover,
+  .ep-fallback:active {
+    transform: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════
