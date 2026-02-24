@@ -1,143 +1,92 @@
 
-## Obiettivo (1:1 col repo)
-Ripristinare **sfondo scuro** + **foglie animate del repo (sprite su canvas)** + **dimensione logo hero 1:1**, eliminando gli “esperimenti” non presenti nell’HTML sorgente.
+## Obiettivo
+Ripristinare **visibilità reale** (in app React) di:
+- **sfondo 1:1** (radial gradients + night) come `public/eden/nuovo_1-2.html`
+- **foglie che cadono** (sprite su canvas da `leaf-source.png`) come nell’HTML
 
-Hai confermato:
-- Sfondo: **1:1 fisso (HTML)**
-- Foglie: **Sprite canvas (HTML)**
-- Logo hero: **1:1 (HTML)**
-
----
-
-## Diagnosi rapida (perché ora “manca tutto”)
-1) **Foglie**: nel repo non sono “due PNG in overlay”, ma un’animazione **su canvas** che:
-   - pre-carica `/eden/leaf-source.png`
-   - rimuove lo sfondo a scacchi (key-out per bassa saturazione)
-   - genera **sprite tintati** e li disegna per frame (`drawImage`) con opacità e dimensioni precise.
-   
-   Nel nostro `useHeroCanvas()` invece stiamo disegnando foglie vettoriali (bezier) + in più abbiamo aggiunto un layer DOM `.eden-leaves` con `<img>`: **non è 1:1**.
-
-2) **Sfondo**: nell’HTML lo sfondo “vero” è il **background del canvas** `#eden-hero-canvas` con radial gradients hardcoded:
-   - `#202b52`, `#133227`, `#411f22`, `#02040a`
-   
-   In `eden.css` oggi lo abbiamo reso “mood-driven” con variabili (`--eden-bg-nw/ne/sw`), quindi **non combacia** e può risultare “meno scuro / diverso”.
-
-3) **Logo hero**: nell’HTML `.hero-logo` usa una **clamp specifica** + una clamp diversa in mobile; nel nostro `eden.css` è diventato `width: min(720px, 78vw)` → **scala in modo diverso** e può risultare “troppo grande”.
+In questo momento il tuo codice **è molto vicino/identico** all’HTML, quindi se “non si vede”, il problema è quasi certamente **di stacking/stacking-context** (z-index negativo che finisce dietro il background del body/app) oppure di **caricamento sprite** non verificato.
 
 ---
 
-## Cosa implementerò (modifiche precise, 1:1)
-### 1) Portare `useHeroCanvas()` 1:1 (sprite canvas + preload)
-**File:** `src/components/eden/EdenLanding.tsx`
+## 1) Verifica tecnica (prima di toccare look & feel)
+### 1.1 Controllo asset
+- Confermato: `public/eden/leaf-source.png` esiste nel progetto.
+- Implementerò un controllo runtime: se l’immagine non carica o `leafReady` resta `false`, lo segnalo in modo chiaro (console warning + piccolo badge debug opzionale).
 
-- Sostituire l’attuale `useHeroCanvas()` (foglie bezier) con la versione del repo:
-  - variabili: `leafSprites`, `leafAspect`, `leafReady`
-  - costanti: `LEAF_OPACITY = 0.42`, `LEAF_TINT_HUES = [115,123,131,139,147]`
-  - funzioni: `clamp`, `buildLeafSprites(img)`, `drawLeaf(l)` che usa:
-    - `baseH = 19.5` (come commento HTML: “Target requested: baseH = 19.50px”)
-    - selezione sprite in base a `l.hue`
-    - `ctx.globalAlpha = LEAF_OPACITY`
-  - preload: `const leafImg = new Image(); leafImg.src = '/eden/leaf-source.png'`
-    - `onload`: `buildLeafSprites(...)`, `resizeCanvas()`, `requestAnimationFrame(animate)`
-    - `onerror`: fallback `resizeCanvas()` + `requestAnimationFrame(animate)` (le foglie non si vedranno se manca l’immagine, ma il resto sì)
-- Tenere glows + wind-on-mouse identici al repo.
-- Assicurare cleanup completo (removeEventListener, cancelAnimationFrame) per evitare leak.
+### 1.2 Controllo stacking (causa #1 quando “manca tutto”)
+Nel tuo CSS il canvas è:
+- `position: fixed`
+- `z-index: -3`
 
-**Risultato atteso:** foglie animate identiche (densità, dimensione, opacità, drift, wind su mouse) come nel repo.
+Questo **in molte app React** può finire “dietro” il background del `body/#root` se manca uno stacking context “contenitore” stabile (nel file HTML statico spesso funziona, dentro un’app con altri CSS può sparire).
 
----
+**Fix 1: creare uno stacking context dedicato per EDEN**:
+- `.eden-theme { position: relative; z-index: 0; }` (crea stacking context)
+- `.page { position: relative; z-index: 1; }` (contenuto sopra)
+- mantenere canvas/aurora/led dietro ma *dentro* lo stacking context EDEN:
+  - `#eden-hero-canvas { z-index: -3 }`
+  - `.hero-aurora { z-index: -2 }`
+  - `.eden-led { z-index: -1 }`
 
-### 2) Rimuovere il layer DOM “eden-leaves” (non presente nell’HTML)
-**File:** `src/components/eden/EdenLanding.tsx`
-
-- Eliminare questo blocco:
-  ```tsx
-  <div className="eden-leaves" ...>
-    <img ... src="/eden/leaf.png" />
-    <img ... src="/eden/leaf-source.png" />
-  </div>
-  ```
-Perché nel repo le foglie sono **solo** canvas sprites, non overlay DOM.
-
-**Risultato atteso:** niente “foglie finte” sovrapposte; tutto torna canvas-driven.
+Questo preserva la logica 1:1 dell’HTML, ma evita che il canvas finisca “sotto al mondo”.
 
 ---
 
-### 3) Ripristinare lo sfondo del canvas 1:1 (fisso, scurissimo)
-**File:** `src/styles/eden.css`
+## 2) Foglie “che cadono”: rendere diagnosticabile e impossibile da “sparire”
+Il codice foglie in `useHeroCanvas()` è già 1:1 con `nuovo_1-2.html` (build sprite, tint, opacity, animate loop). Se non le vedi, voglio eliminare le due possibilità più comuni:
 
-- Aggiornare `#eden-hero-canvas { background: ... }` per matchare l’HTML:
-  - usare HSL equivalenti ai 4 colori (convertiti) oppure mantenere i colori tramite `color-mix`/hex (ma in questo progetto preferiamo HSL).
-  - mantenere esattamente la stessa struttura:
-    - radial at `0 0`, `100% 0`, `0 100%` + base night.
-- Rimuovere/neutralizzare le variabili “mood globale” (`--eden-bg-nw/ne/sw`) e le regole:
-  - `.eden-theme[data-mood="mare"] { ... }`
-  - `.eden-theme[data-mood="terra"] { ... }`
-  
-  Perché hai richiesto **sfondo 1:1 fisso** come l’HTML.
+### 2.1 Se il canvas non è visibile
+- Risolto dallo Step 1.2 (stacking context).
 
-**Risultato atteso:** background identico al repo (stesso “nero” + stesse macchie colore in angoli).
+### 2.2 Se `leafReady` non diventa mai true
+Aggiungerò:
+- un `console.warn` se dopo X secondi `leafReady === false`
+- log dell’esito di:
+  - `leafImg.onload` (ok)
+  - `leafImg.onerror` (errore)
+- (opzionale) un piccolo indicatore invisibile in produzione ma attivabile con querystring tipo `?edenDebug=1` per mostrarti:
+  - “Leaf sprite: loaded/failed”
+  - “Canvas size: w×h”
+  - “Leaves count: N”
 
----
-
-### 4) Ripristinare dimensione logo hero 1:1 (desktop + mobile)
-**File:** `src/styles/eden.css`
-
-- Allineare `.hero-logo` a quanto c’è nell’HTML:
-  - desktop: `width: clamp(320px, 40vw, 760px); max-width: 92vw;`
-  - mobile (`@media (max-width:700px)`): `width: clamp(240px, 72vw, 440px);`
-- Verificare anche eventuali padding/margini in `.hero-content` / `.hero-title` per evitare scaling percepito diverso.
-
-**Risultato atteso:** logo “né troppo grande né troppo piccolo”, esattamente come repo.
+Così non si va più “a sensazione”: o lo sprite carica e le foglie si disegnano, oppure lo vediamo subito.
 
 ---
 
-### 5) Verifica “full-bleed” e stacking (perché se lo stacking è sbagliato sembra “manca tutto”)
-**File:** `src/styles/eden.css`
+## 3) Sfondo 1:1: bloccare qualunque override “app-level”
+Lo sfondo nel tuo `eden.css` è già corretto e coerente con l’HTML:
+- `#eden-hero-canvas { background: radial... + hsl(var(--eden-night)) }`
+- tokens `--eden-bg-nw/ne/sw` corrispondono ai colori `#202b52 / #133227 / #411f22`
 
-- Confermare questi invarianti (già presenti ma li verificherò con ordine e specificità CSS):
-  - `body.eden-body { background: #02040a; overflow-x:hidden; }`
-  - `body.eden-body #root { max-width:none; padding:0; margin:0; }`
-  - z-index background layers:
-    - canvas: `z-index:-3`
-    - aurora: `z-index:-2`
-    - led: `z-index:-1`
-    - contenuto `.page`: sopra
-- Rimuovere eventuali regole duplicate/obsolete di `.eden-leaves` una volta eliminato il markup.
-
-**Risultato atteso:** canvas/aurora/led visibili sempre e non “coperti” da altri layer.
+Per evitare che qualunque CSS globale (Tailwind base / tema) lo alteri, farò:
+- consolidamento delle regole “EDEN only” (tutte sotto `body.eden-body` / `.eden-theme`)
+- controllo che nessun’altra regola assegni `background` a `canvas` o sovrascriva `#eden-hero-canvas`
 
 ---
 
-## Test (obbligatorio, end-to-end)
-1) Apri `/` e verifica:
-   - sfondo scuro identico (angoli colorati + nero pieno)
-   - foglie animate visibili (non statiche), con drift continuo
-   - muovi il mouse sul hero: le foglie devono reagire (wind) come nel repo
-2) Resize mobile (<700px):
-   - logo hero ridimensionato come repo (clamp mobile)
-   - nessun taglio del canvas, nessun “bianco” dietro
-3) Scroll pagina:
-   - il canvas resta fixed dietro (non scompare dopo hero)
-   - performance ok (nessun lag evidente)
-4) Console:
-   - nessun errore su caricamento `/eden/leaf-source.png` (se 404, foglie non compariranno: lo segnalo subito)
+## 4) Test end-to-end (criteri “si vede / non si vede”)
+Dopo le modifiche, verifichiamo in preview:
+1) **Apri “/”** e controlla subito:
+   - background: macchie colore negli angoli + nero pieno (non grigio/flat)
+2) **Foglie**:
+   - devono vedersi chiaramente in movimento continuo (caduta + sway)
+   - muovendo il mouse sul hero devono “deviare” (wind)
+3) **Console**:
+   - nessun errore di caricamento `/eden/leaf-source.png`
+   - se c’è errore, deve apparire il warning “Leaf sprite failed to load” (diagnosi immediata)
 
 ---
 
-## File che toccherò
-- `src/components/eden/EdenLanding.tsx`
-  - `useHeroCanvas()` 1:1 con sprite + preload
-  - rimozione `.eden-leaves` DOM
+## File che leggerò/aggiornerò in implementazione
 - `src/styles/eden.css`
-  - background canvas 1:1 fisso
-  - `.hero-logo` clamp 1:1 (desktop + mobile)
-  - pulizia CSS `.eden-leaves` e rimozione mood globale non presente nel repo
+  - aggiunta stacking context su `.eden-theme`
+  - z-index/position “a prova di app” mantenendo la gerarchia 1:1
+- `src/components/eden/EdenLanding.tsx`
+  - aggiunta diagnostica minima su caricamento leaf sprite (warn/log + debug opzionale)
 
 ---
 
-## Criteri di accettazione (non negoziabili)
-- Sfondo: **stesso “nero”** e stessi radial come `public/eden/nuovo_1-2.html`
-- Foglie: **animate su canvas con sprite** (non overlay immagini)
-- Logo hero: **stessa dimensione** dell’HTML (clamp desktop + clamp mobile)
-- Nessun effetto “mood globale” sul background (sfondo fisso come repo)
+## Definition of Done (accettazione)
+- Sfondo identico al repo **visibile sempre**
+- Foglie sprite **visibili e animate** (non “forse”)
+- Se qualcosa fallisce (asset, canvas size, stacking), esiste un segnale chiaro che lo indica (non più tentativi)
