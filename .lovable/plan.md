@@ -1,92 +1,169 @@
 
-## Obiettivo
-Ripristinare **visibilità reale** (in app React) di:
-- **sfondo 1:1** (radial gradients + night) come `public/eden/nuovo_1-2.html`
-- **foglie che cadono** (sprite su canvas da `leaf-source.png`) come nell’HTML
-
-In questo momento il tuo codice **è molto vicino/identico** all’HTML, quindi se “non si vede”, il problema è quasi certamente **di stacking/stacking-context** (z-index negativo che finisce dietro il background del body/app) oppure di **caricamento sprite** non verificato.
-
----
-
-## 1) Verifica tecnica (prima di toccare look & feel)
-### 1.1 Controllo asset
-- Confermato: `public/eden/leaf-source.png` esiste nel progetto.
-- Implementerò un controllo runtime: se l’immagine non carica o `leafReady` resta `false`, lo segnalo in modo chiaro (console warning + piccolo badge debug opzionale).
-
-### 1.2 Controllo stacking (causa #1 quando “manca tutto”)
-Nel tuo CSS il canvas è:
-- `position: fixed`
-- `z-index: -3`
-
-Questo **in molte app React** può finire “dietro” il background del `body/#root` se manca uno stacking context “contenitore” stabile (nel file HTML statico spesso funziona, dentro un’app con altri CSS può sparire).
-
-**Fix 1: creare uno stacking context dedicato per EDEN**:
-- `.eden-theme { position: relative; z-index: 0; }` (crea stacking context)
-- `.page { position: relative; z-index: 1; }` (contenuto sopra)
-- mantenere canvas/aurora/led dietro ma *dentro* lo stacking context EDEN:
-  - `#eden-hero-canvas { z-index: -3 }`
-  - `.hero-aurora { z-index: -2 }`
-  - `.eden-led { z-index: -1 }`
-
-Questo preserva la logica 1:1 dell’HTML, ma evita che il canvas finisca “sotto al mondo”.
+## Obiettivo (in base alle tue 5 richieste)
+1) In hero, “Scorri nel nostro Eden” **centrato in basso** e con **movimento** (parallax + bobbing).
+2) Ripristinare/estendere le **animazioni di entrata nello scroll** su **tutte le sezioni** e anche sugli **elementi interni** (stagger).
+3) Inserire **“La storia dell’EDEN”** (versione **media narrativa**) **prima** della sezione “La cucina di Miriam”.
+4) Spostare il **modulo Eventi** (quello “Richiedi una consulenza”) **sotto Recensioni**.
+5) Aggiungere metodi di contatto “robusti” (WhatsApp + alternative) così, anche se qualcosa blocca l’invio, l’utente **riesce comunque a contattare**.
 
 ---
 
-## 2) Foglie “che cadono”: rendere diagnosticabile e impossibile da “sparire”
-Il codice foglie in `useHeroCanvas()` è già 1:1 con `nuovo_1-2.html` (build sprite, tint, opacity, animate loop). Se non le vedi, voglio eliminare le due possibilità più comuni:
-
-### 2.1 Se il canvas non è visibile
-- Risolto dallo Step 1.2 (stacking context).
-
-### 2.2 Se `leafReady` non diventa mai true
-Aggiungerò:
-- un `console.warn` se dopo X secondi `leafReady === false`
-- log dell’esito di:
-  - `leafImg.onload` (ok)
-  - `leafImg.onerror` (errore)
-- (opzionale) un piccolo indicatore invisibile in produzione ma attivabile con querystring tipo `?edenDebug=1` per mostrarti:
-  - “Leaf sprite: loaded/failed”
-  - “Canvas size: w×h”
-  - “Leaves count: N”
-
-Così non si va più “a sensazione”: o lo sprite carica e le foglie si disegnano, oppure lo vediamo subito.
+## Stato attuale (da codebase)
+- “Scorri nel nostro Eden” esiste: `.hero-scroll` è già `left:50%` + `translateX(-50%)`, e ha anche `parallax-layer` con `data-parallax="0.18"`.
+- Reveal-on-scroll esiste già:
+  - Hook `useRevealOnScroll(".reveal-on-scroll")` con `IntersectionObserver`.
+  - CSS `.reveal-on-scroll` + `.reveal-on-scroll.visible`.
+  - Stagger esiste (`.reveal-stagger`) ma oggi è “specializzato” soprattutto per la gallery.
+- Il “modulo” vero e proprio è quello della sezione **Eventi** (`#eventi`), non esiste un secondo form nella sezione Contatti (lì ci sono info + map + CTA).
 
 ---
 
-## 3) Sfondo 1:1: bloccare qualunque override “app-level”
-Lo sfondo nel tuo `eden.css` è già corretto e coerente con l’HTML:
-- `#eden-hero-canvas { background: radial... + hsl(var(--eden-night)) }`
-- tokens `--eden-bg-nw/ne/sw` corrispondono ai colori `#202b52 / #133227 / #411f22`
+## Modifiche da implementare (dettaglio)
 
-Per evitare che qualunque CSS globale (Tailwind base / tema) lo alteri, farò:
-- consolidamento delle regole “EDEN only” (tutte sotto `body.eden-body` / `.eden-theme`)
-- controllo che nessun’altra regola assegni `background` a `canvas` o sovrascriva `#eden-hero-canvas`
+### A) Hero: “Scorri nel nostro Eden” centrato + movimento (parallax + bobbing)
+**File:** `src/styles/eden.css`
+1. Aggiungere un’animazione dedicata a `.hero-scroll` (es. `scrollBobbing`) che muove leggermente su/giù e fa respirare l’opacità.
+2. Fare attenzione a non “rompere” il parallax allo scroll già esistente:
+   - Soluzione: animare con `translateY()` via keyframes ma applicandola su un wrapper interno oppure usando `transform` in modo composito (perché `.parallax-layer` già usa `transform: translate3d(0,var(--parallaxY),0)`).
+   - Approccio più sicuro: **aggiungere un inner wrapper** dentro `.hero-scroll` in JSX (es. `.hero-scroll-inner`) e animare quello, lasciando `.parallax-layer` gestire il transform principale.
+
+**File:** `src/components/eden/EdenLanding.tsx`
+3. Modificare markup:
+   - da:
+     ```tsx
+     <div className="hero-scroll parallax-layer" data-parallax="0.18">...</div>
+     ```
+   - a:
+     ```tsx
+     <div className="hero-scroll parallax-layer" data-parallax="0.18">
+       <div className="hero-scroll-inner">...</div>
+     </div>
+     ```
+   così il parallax resta su `.hero-scroll`, e il bobbing su `.hero-scroll-inner`.
+
+**Acceptance criteria**
+- Sempre centrato in basso (desktop + mobile).
+- Si muove chiaramente (bobbing) anche a pagina ferma.
+- Durante scroll, continua ad avere il “parallax” leggero.
 
 ---
 
-## 4) Test end-to-end (criteri “si vede / non si vede”)
-Dopo le modifiche, verifichiamo in preview:
-1) **Apri “/”** e controlla subito:
-   - background: macchie colore negli angoli + nero pieno (non grigio/flat)
-2) **Foglie**:
-   - devono vedersi chiaramente in movimento continuo (caduta + sway)
-   - muovendo il mouse sul hero devono “deviare” (wind)
-3) **Console**:
-   - nessun errore di caricamento `/eden/leaf-source.png`
-   - se c’è errore, deve apparire il warning “Leaf sprite failed to load” (diagnosi immediata)
+### B) Animazioni di entrata nello scroll: estese a tutte le sezioni + elementi interni (stagger)
+**File:** `src/components/eden/EdenLanding.tsx`
+1. Potenziare la logica reveal per replicare il comportamento dell’HTML sorgente:
+   - quando un `.reveal-on-scroll` diventa `visible`, assegnare automaticamente `--i` ai figli di ogni `.reveal-stagger` interno (come fa l’HTML: indicizzazione per delay).
+2. Unificare/semplificare:
+   - oggi hai già:
+     - `useRevealOnScroll(".reveal-on-scroll")`
+     - un secondo `IntersectionObserver` per `.reveal-stagger`
+   - Implementazione proposta:
+     - mantenere `useRevealOnScroll`, ma **quando un elemento entra**, oltre a fare `.classList.add("visible")`, eseguire anche:
+       - per ogni `.reveal-stagger` dentro quel blocco: assegna `--i` a ciascun child element (solo nodi elemento).
+     - A questo punto, l’observer separato `.reveal-stagger` diventa opzionale: possiamo rimuoverlo o lasciarlo solo per casi particolari. L’obiettivo è evitare doppioni e rendere il comportamento “globale”.
+
+**File:** `src/components/eden/EdenLanding.tsx` (markup)
+3. Aggiungere classi `reveal-stagger` + `stagger-item` dove serve:
+   - Sezione EDEN (i “3 punti”): mettere `.reveal-stagger` sul contenitore e `.stagger-item` su ogni `.eden-point`.
+   - Recensioni: mettere `.reveal-stagger` su `.reviews-grid` e `.stagger-item` su ogni `.review-card`.
+   - Contatti: mettere `.reveal-stagger` su `.contact-list` e `.stagger-item` su ogni `.c-item` (e opzionalmente sulla card indicazioni).
+   - Qualsiasi altra griglia/card del layout che deve entrare “a cascata”.
+
+**File:** `src/styles/eden.css`
+4. Verificare che esistano regole coerenti per:
+   - `.reveal-stagger .stagger-item { opacity:0; transform: ... }`
+   - `.reveal-stagger.visible .stagger-item { opacity:1; transform: ...; transition-delay: calc(var(--i) * Xms) }`
+   Se alcune regole non coprono i nuovi elementi, aggiungerle mantenendo timing/easing già presenti nello stylesheet EDEN.
+
+**Acceptance criteria**
+- Ogni sezione principale entra con reveal.
+- Dentro EDEN/Recensioni/Contatti i card entrano con **stagger** (uno dopo l’altro), senza scatti e senza “apparire già visibili”.
 
 ---
 
-## File che leggerò/aggiornerò in implementazione
-- `src/styles/eden.css`
-  - aggiunta stacking context su `.eden-theme`
-  - z-index/position “a prova di app” mantenendo la gerarchia 1:1
+### C) Inserire “La storia dell’EDEN” (media narrativa) prima della cucina
+**File:** `src/components/eden/EdenLanding.tsx`
+1. Inserire una nuova sezione tra BLOCCO 2 (EDEN) e BLOCCO 3 (CUCINA):
+   - id: `storia` (o `storia-eden`, scegliamo `storia` per semplicità)
+   - classi: `story-section reveal-on-scroll`
+2. Contenuto (media narrativa), struttura proposta:
+   - Kicker (tipo “La storia”)
+   - Titolo (H2)
+   - 2–3 paragrafi narrativi
+   - micro-timeline / “capitoli” (3 step) in stile premium (stagger)
+
+**File:** `src/styles/eden.css`
+3. Aggiungere lo styling della nuova sezione riusando pattern esistenti:
+   - shell simile a `eden-shell`/`gallery-shell`
+   - griglia due colonne (testo + “timeline card”)
+   - supporto reveal/stagger integrato (coerente con punto B)
+
+**In più (navigazione)**
+4. Opzionale ma consigliato: aggiungere link “Storia” nella navbar (tra Eden e Cucina) per coerenza.
+
+**Acceptance criteria**
+- La sezione appare esattamente nel punto richiesto (prima di “La cucina di Miriam”).
+- È animata in entrata come le altre (reveal + eventuale stagger).
+- Tipografia/spacing coerenti col resto del tema EDEN.
+
+---
+
+### D) Spostare il modulo Eventi sotto Recensioni
+**File:** `src/components/eden/EdenLanding.tsx`
+1. Spostare l’intero BLOCCO 5 `#eventi` (sezione `ep-section`) **dopo** BLOCCO 6 `#recensioni` e **prima** BLOCCO 7 `#contatti`.
+2. Verificare che:
+   - gli anchor `href="#eventi"` continuino a funzionare (funzioneranno comunque, solo che porteranno più giù).
+   - eventuali reveal/stagger associati alla sezione Eventi continuino a triggerare correttamente (con observer).
+
+**Acceptance criteria**
+- Dopo Recensioni, la sezione successiva è Eventi (con form), poi Contatti.
+
+---
+
+### E) Metodo di contatto WhatsApp + alternative “anti-problemi” per il modulo
+Il form Eventi oggi apre WhatsApp con `wa.me` + testo precompilato (ok), ma nella pratica possono esserci blocchi (popup blocker, browser in-app, ecc).
+
+**File:** `src/components/eden/EdenLanding.tsx`
+1. Rendere “a prova di blocchi”:
+   - aggiungere sotto al bottone “Invia la richiesta” una riga di fallback:
+     - Link diretto: “Apri WhatsApp” (stesso messaggio, stesso numero)
+     - “Copia messaggio” (clipboard) così l’utente può incollare manualmente su WhatsApp
+     - opzionale: “Chiama” (tel:)
+2. Validazione:
+   - mantenere le validazioni già presenti prima di generare il messaggio (e continuare a fare `encodeURIComponent`).
+   - imporre limiti di lunghezza (nome/tel/note) per evitare URL troppo lunghi e contenuti strani.
+
+**File:** `src/styles/eden.css`
+3. Stilizzare questi fallback come mini-link/pill coerenti con la UI.
+
+**Acceptance criteria**
+- Se “Invia la richiesta” non apre la nuova scheda, l’utente ha comunque:
+  - un link WhatsApp cliccabile
+  - un bottone copia-testo funzionante
+  - un link telefono
+
+---
+
+## File che toccherò
 - `src/components/eden/EdenLanding.tsx`
-  - aggiunta diagnostica minima su caricamento leaf sprite (warn/log + debug opzionale)
+  - wrapper per animazione hero scroll
+  - reveal logic: assegnazione `--i` ai gruppi stagger
+  - aggiunta classi `reveal-stagger/stagger-item` su elementi interni (eden points, reviews, contatti)
+  - nuova sezione “storia”
+  - spostamento sezione `#eventi` sotto recensioni
+  - fallback contatti (whatsapp/copia/chiama) nel form eventi
+- `src/styles/eden.css`
+  - keyframes + classi per bobbing hero scroll (su wrapper interno)
+  - eventuali estensioni CSS per stagger su card (se mancanti)
+  - styling nuova sezione story
 
 ---
 
-## Definition of Done (accettazione)
-- Sfondo identico al repo **visibile sempre**
-- Foglie sprite **visibili e animate** (non “forse”)
-- Se qualcosa fallisce (asset, canvas size, stacking), esiste un segnale chiaro che lo indica (non più tentativi)
+## Test end-to-end (che farai in preview)
+1) Hero: verifica “Scorri nel nostro Eden” centrato in basso + bobbing visibile, e che allo scroll si muova anche col parallax.
+2) Scroll completo pagina: ogni sezione entra con reveal; in EDEN/Recensioni/Contatti vedi stagger delle card.
+3) Dopo “Recensioni” trovi “Eventi” (form) e poi “Contatti”.
+4) Form Eventi:
+   - clic “Invia la richiesta” → si apre WhatsApp con testo
+   - se blocca, prova “Apri WhatsApp” e “Copia messaggio” (incolla in WhatsApp)
+   - prova anche su mobile.
+
