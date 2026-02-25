@@ -1,92 +1,139 @@
 
-## Obiettivo (modifica richiesta)
-1) Cambiare **le scritte** sui due tastini dell’hero in:
-- **LOCANDA EDEN**
-- **MASSERIA PETRULLO**
-
-2) Rendere i **colori più accesi** (più saturi/visibili).
-
-3) Sistemare il **colore del testo** (e, se serve, micro-ombra) in modo che sia **abbinato** e **non dia fastidio** rispetto allo sfondo scelto (leggibilità + armonia).
-
-> Vincolo: non cambiamo struttura/layout del blocco hero; interveniamo solo su **testi** e **color palette** dei due pill.
+## Obiettivo
+Aggiornare **/locanda-eden** (pagina “LOCANDA EDEN”) con:
+1) **Tasto “Torna indietro”** che porta **sempre** alla Home (`/`).
+2) **Hero “bella”** con:
+   - lo **stesso logo EDEN** dell’hero della home (`/eden/eden-hero-logo.png`)
+   - una scritta sotto tipo **“LOCANDA”** (stile simile alla home).
+3) Sezioni sotto:
+   - **Menù** (con contenuti “esempio realistici”)
+   - **Carta Vini** (contenuti esempio)
+   - **Galleria** (con immagini esempio)
+   - **Tasto Prenota** che apre **WhatsApp** con **messaggio precompilato** sul **numero già usato nel sito**.
 
 ---
 
 ## Esplorazione (stato attuale)
-- In `src/components/eden/EdenLanding.tsx` i due pill sono già link cliccabili, ma con testo:
-  - “Adelfia · Puglia”
-  - “Food · Wine · Eventi”
+- `src/pages/LocandaEden.tsx` è ancora placeholder (titolo + “pagina in arrivo”).
+- Logo hero principale già presente in home: in `src/components/eden/EdenLanding.tsx`  
+  `src="/eden/eden-hero-logo.png"`.
+- Numero WhatsApp già usato nel progetto: `https://wa.me/393497152524` (in `EdenLanding.tsx`).
 - In `src/styles/eden.css` esistono già:
-  - `.hero-pill` (stile base)
-  - `.hero-pill--locanda` (biscotto + verde, ma attualmente soft)
-  - `.hero-pill--masseria` (bianco + verde/giallo, ma attualmente soft)
+  - la base tema EDEN (`.eden-theme`, palette, ecc.)
+  - stili “sezione” (`.eden-shell`, `.eden-title`, `.eden-sub`, ecc.)
+  - stili completi per una **gallery grid** (`.gallery-section`, `.gallery-grid`, `.gallery-item`, overlay, ecc.) riutilizzabili anche su Locanda.
 
 ---
 
-## Design (come li rendo più “accesi” senza risultare aggressivi)
-### Testo
-- Sostituisco **solo** il contenuto testuale dei due `<Link>`:
-  - `LOCANDA EDEN`
-  - `MASSERIA PETRULLO`
+## Decisioni confermate (dalle tue risposte)
+- Tasto indietro: **sempre alla Home** (`/`)
+- WhatsApp: **stesso numero esistente**
+- Contenuti iniziali: **Esempi realistici** (poi li sostituiamo con i tuoi reali)
 
-### Colori (più accesi + testo abbinato)
-Intervengo **solo** sulle classi variante:
-- `.hero-pill--locanda`
-  - Background più “biscotto” (più presente) + gradiente verde EDEN più saturo (alpha più alta).
-  - Testo: **scuro caldo** (marrone/ebano) per non “vibrare” su fondi chiari; opzionale `text-shadow` molto leggero per definizione.
-- `.hero-pill--masseria`
-  - Base più bianca/perla + gradiente **verde erba** più saturo + accento **giallo** più evidente (ma non neon).
-  - Testo: **scuro profondo** (eden-night) per contrasto pulito; `text-shadow` minimale se serve.
+---
 
-### Accessibilità (focus/hover)
-- Mantengo gli effetti esistenti (hover lift) e aggiusto:
-  - `border-color` un filo più coerente col nuovo schema
-  - `focus-visible` invariato (già buono)
+## Design / Approccio (senza stravolgere EDEN)
+### Layout pagina
+- Mantengo `eden-html` / `eden-body` come già fatto (così lo sfondo e i globals EDEN restano coerenti).
+- Aggiungo un **header semplice di pagina** (non quello completo della home), con:
+  - “← Torna a EDEN” (link interno a `/`)
+  - opzionale micro-titolo “Locanda Eden” a destra (in stile soft)
+
+### Hero Locanda
+- Creo una sezione `locanda-hero` con:
+  - sfondo coerente EDEN (gradiente notturno + aurora soft)
+  - **logo**: `<img className="hero-logo" src="/eden/eden-hero-logo.png" ... />` per mantenere proporzioni/stile
+  - sotto: “LOCANDA” (o “LOCANDA EDEN” se preferisci, ma per ora seguo la tua frase “Locanda quasi simile” → “LOCANDA” come sub-title)
+  - breve descrizione 1 riga (esempio realistico) per dare “peso” alla hero
+
+### Menù + Carta vini
+- Struttura in due blocchi con card/colonne:
+  - Menù: antipasti, primi, secondi, dessert (esempi)
+  - Carta Vini: “Bollicine / Bianchi / Rossi / Rosati / Dessert” (esempi)
+- Implementazione “data-driven”: array di sezioni e items in TS, poi map in UI (così sarà facile sostituire con i contenuti reali).
+
+### Galleria
+- Riutilizzo gli stili già presenti (`.gallery-grid`, `.gallery-item`, overlay).
+- Inserisco 6–9 immagini “esempio” (URL esterni stabili) + titoli/tag.
+  - Quando mi mandi le foto vere, sostituiamo gli URL con asset in `public/` o `src/assets/`.
+
+### CTA Prenota WhatsApp
+- Bottone “Prenota su WhatsApp” che apre:
+  `https://wa.me/393497152524?text=<messaggio>`
+- Messaggio precompilato (esempio realistico), tipo:
+  ```
+  Ciao EDEN, vorrei prenotare per la LOCANDA.
+  Data:
+  Orario:
+  Persone:
+  Nome:
+  Note:
+  ```
+- Apertura in nuova tab con `target="_blank"` + `rel="noreferrer"`.
 
 ---
 
 ## Piano di implementazione (step-by-step)
 
-### 1) Aggiornare le scritte dei tastini
-**File:** `src/components/eden/EdenLanding.tsx`
-- Individuare il blocco:
-  - `<Link to="/locanda-eden" className="hero-pill hero-pill--locanda">...</Link>`
-  - `<Link to="/masseria-petrullo" className="hero-pill hero-pill--masseria">...</Link>`
-- Sostituire i testi con:
-  - `LOCANDA EDEN`
-  - `MASSERIA PETRULLO`
-- Nessun’altra modifica (stesse classi, stessi link, stesso layout).
+### 1) Aggiornare `src/pages/LocandaEden.tsx` (da placeholder a pagina completa)
+- Tenere l’`useEffect` che applica `eden-html` / `eden-body`.
+- Sostituire il contenuto con:
+  1) **Header pagina** (fixed o sticky):
+     - `<Link to="/" className="locanda-back">← Torna a EDEN</Link>`
+  2) **Hero Locanda**:
+     - logo `/eden/eden-hero-logo.png` (stessa classe `hero-logo` per coerenza)
+     - titolo/subtitolo (LOCANDA) + riga descrizione
+     - CTA “Prenota su WhatsApp” (porta a `wa.me` con testo)
+  3) **Sezione Menù**
+  4) **Sezione Carta Vini**
+  5) **Sezione Galleria** (grid già pronta in CSS)
+  6) (Opzionale) ripetizione CTA “Prenota” a fine pagina (per conversione)
 
-### 2) Rendere i colori più accesi e sistemare il colore del testo
-**File:** `src/styles/eden.css`
-- Aggiornare **solo** questi selettori (già presenti):
-  - `.hero-pill--locanda`
-  - `.hero-pill--masseria`
-- Modifiche previste:
-  - aumentare l’intensità dei gradient (alpha più alta / stop più “decisi”)
-  - ritoccare `border-color` per accompagnare meglio il nuovo background
-  - impostare `color` del testo per massima armonia/leggibilità (scuro caldo su locanda, scuro profondo su masseria)
-  - (se necessario) aggiungere `text-shadow` molto sottile per rendere il testo più “fermo” sul gradiente, senza cambiare dimensioni o spessori.
+### 2) Aggiungere stili dedicati in `src/styles/eden.css`
+Aggiungerò classi nuove senza toccare gli stili della home:
+- `.locanda-header`, `.locanda-back` (aspetto “pill” soft, hover/focus accessibile)
+- `.locanda-hero`, `.locanda-hero-inner`, `.locanda-kicker`, `.locanda-title`, `.locanda-desc`
+- `.locanda-cta` (bottone WhatsApp coerente con EDEN: emerald glow, testo leggibile)
+- `.locanda-menu-grid`, `.locanda-card`, `.locanda-card-title`, `.locanda-item`, `.locanda-item-name`, `.locanda-item-desc`, `.locanda-item-price`
+- Piccole media query per mobile (padding e colonne)
 
-> Nota: non tocco `.hero-pill` base (padding, radius, font-size, letter-spacing, ecc.) quindi non cambiano dimensioni/altezza dei pill.
+### 3) Implementare dati “esempio realistici”
+Dentro `LocandaEden.tsx`:
+- costanti tipo:
+  - `const menuSections = [...]`
+  - `const wineSections = [...]`
+  - `const galleryItems = [...]`
+- (Importante) tenere i dati facilmente sostituibili quando mi dai:
+  - piatti veri, prezzi veri
+  - etichette vini
+  - foto reali
 
 ---
 
-## Test end-to-end (obbligatorio)
-1) Su `/` verifica che i pill mostrino **esattamente**:
-   - “LOCANDA EDEN”
-   - “MASSERIA PETRULLO”
-2) Clic:
-   - LOCANDA EDEN → `/locanda-eden`
-   - MASSERIA PETRULLO → `/masseria-petrullo`
-3) Controllo visivo:
-   - colori più accesi rispetto a prima
-   - testo non “vibra” col fondo (leggibile, non fastidioso)
-4) Mobile:
-   - leggibilità ok e tap target invariato.
+## Verifiche end-to-end (obbligatorie)
+1) Vai su `/locanda-eden`:
+   - vedi subito il **tasto “← Torna a EDEN”**
+   - clic → torna a `/`
+2) Hero:
+   - logo **identico** a quello della home (stesso file `/eden/eden-hero-logo.png`)
+   - scritta “LOCANDA” sotto, ben leggibile su mobile/desktop
+3) Sezioni:
+   - Menù e Carta Vini visivamente “premium” e leggibili
+   - Galleria: griglia funzionante (hover overlay su desktop)
+4) Bottone WhatsApp:
+   - clic → apre `wa.me/393497152524` con **testo precompilato**
+   - verifica anche su mobile (apertura WhatsApp app / web)
 
 ---
 
 ## File coinvolti
-- **EDIT** `src/components/eden/EdenLanding.tsx` (solo testo dei due link)
-- **EDIT** `src/styles/eden.css` (solo regole colore per `.hero-pill--locanda` e `.hero-pill--masseria`)
+- **EDIT** `src/pages/LocandaEden.tsx`
+- **EDIT** `src/styles/eden.css`
+
+---
+
+## Dettagli tecnici (per trasparenza)
+- Navigazione back: userò `Link` di `react-router-dom` verso `/` (come richiesto “sempre Home”).
+- Logo hero: uso path pubblico `/eden/eden-hero-logo.png` (già usato e quindi “garantito” nel progetto).
+- WhatsApp: URL `https://wa.me/393497152524?text=${encodeURIComponent(message)}` con `target="_blank"` e `rel="noreferrer"`.
+- Galleria: riuso delle classi esistenti in `eden.css` per evitare duplicazioni e mantenere coerenza estetica EDEN.
