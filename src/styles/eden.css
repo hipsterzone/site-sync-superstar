@@ -3015,6 +3015,314 @@ body.eden-lock {
 }
 
 /* ═══════════════════════════════════════════════
+   LOCANDA EDEN · SUBPAGE
+═══════════════════════════════════════════════ */
+
+.locanda-page {
+  min-height: 100vh;
+}
+
+.locanda-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 14px 18px;
+  pointer-events: none;
+}
+
+.locanda-header-inner {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    hsl(225 64% 3% / 0.62);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 44px hsl(0 0% 0% / 0.65);
+  pointer-events: auto;
+}
+
+.locanda-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: hsl(39 26% 92%);
+
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background: hsl(0 0% 0% / 0.18);
+  box-shadow: 0 12px 30px hsl(0 0% 0% / 0.55);
+
+  pointer-events: auto;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.locanda-back:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--eden-gold) / 0.38);
+  background: hsl(0 0% 0% / 0.24);
+}
+
+.locanda-back:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsl(var(--eden-emerald) / 0.24),
+    0 12px 30px hsl(0 0% 0% / 0.55);
+}
+
+.locanda-header-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: hsl(0 0% 100% / 0.55);
+  pointer-events: none;
+}
+
+.locanda-hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 110px 18px 60px;
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at 0 0, hsl(var(--eden-bg-nw)) 0%, transparent 58%),
+    radial-gradient(circle at 100% 0, hsl(var(--eden-bg-ne)) 0%, transparent 58%),
+    radial-gradient(circle at 0 100%, hsl(var(--eden-bg-sw)) 0%, transparent 62%),
+    hsl(var(--eden-night));
+}
+
+.locanda-hero-aurora {
+  position: absolute;
+  inset: -22%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  background:
+    radial-gradient(circle at 20% 0%, hsl(151 78% 79% / 0.22) 0%, transparent 55%),
+    radial-gradient(circle at 88% 88%, hsl(36 53% 87% / 0.26) 0%, transparent 58%),
+    radial-gradient(circle at 55% 55%, hsl(var(--eden-emerald) / 0.12) 0%, transparent 62%);
+  filter: blur(8px);
+  animation: auroraDrift 24s ease-in-out infinite alternate;
+}
+
+.locanda-hero-inner {
+  max-width: 1180px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.locanda-hero-content {
+  text-align: center;
+  padding: 34px 18px 22px;
+}
+
+.locanda-title {
+  margin-top: 18px;
+  font-family: var(--eden-font-serif);
+  font-size: clamp(3.2rem, 6.4vw, 5.1rem);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  line-height: 1.08;
+  background: linear-gradient(135deg, hsl(36 60% 98%), hsl(35 60% 78%), hsl(31 38% 53%));
+  -webkit-background-clip: text;
+  color: transparent;
+  background-size: 260%;
+  background-position: 0% 50%;
+  animation: lightSweep 9s linear infinite;
+}
+
+.locanda-desc {
+  margin-top: 18px;
+  max-width: 40rem;
+  margin-inline: auto;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: hsl(var(--eden-text-soft));
+}
+
+.locanda-cta-row {
+  margin-top: 26px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.locanda-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+
+  border: 1px solid hsl(var(--eden-emerald) / 0.38);
+  color: hsl(39 26% 92%);
+  background:
+    radial-gradient(circle at 16% 0%, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    hsl(225 64% 3% / 0.62);
+  box-shadow:
+    0 12px 34px hsl(0 0% 0% / 0.58),
+    0 0 52px hsl(var(--eden-emerald) / 0.12);
+
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.locanda-cta:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--eden-emerald) / 0.62);
+  box-shadow:
+    0 16px 46px hsl(0 0% 0% / 0.62),
+    0 0 74px hsl(var(--eden-emerald) / 0.18);
+}
+
+.locanda-cta:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsl(var(--eden-emerald) / 0.22),
+    0 16px 46px hsl(0 0% 0% / 0.62),
+    0 0 74px hsl(var(--eden-emerald) / 0.18);
+}
+
+.locanda-cta--ghost {
+  border-color: hsl(0 0% 100% / 0.18);
+  background: hsl(0 0% 0% / 0.18);
+}
+
+.locanda-section {
+  padding: 64px 0;
+}
+
+.locanda-section-head {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.locanda-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(0 0% 100% / 0.58);
+  margin-bottom: 10px;
+}
+
+.locanda-h2 {
+  letter-spacing: 0.28em;
+}
+
+.locanda-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.locanda-card {
+  border-radius: 22px;
+  border: 1px solid hsl(0 0% 100% / 0.1);
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.08) 0%, transparent 55%),
+    hsl(225 40% 6% / 0.72);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 54px hsl(0 0% 0% / 0.55);
+  padding: 18px 18px 14px;
+}
+
+.locanda-card-title {
+  font-family: var(--eden-font-serif);
+  font-size: 1.22rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(39 26% 92%);
+  margin-bottom: 12px;
+}
+
+.locanda-list {
+  display: grid;
+  gap: 12px;
+}
+
+.locanda-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  padding-top: 12px;
+  border-top: 1px solid hsl(0 0% 100% / 0.06);
+}
+
+.locanda-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.locanda-item-name {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.locanda-item-desc {
+  margin-top: 3px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: hsl(0 0% 100% / 0.58);
+}
+
+.locanda-item-price {
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(var(--eden-gold));
+  padding-top: 2px;
+  white-space: nowrap;
+}
+
+.locanda-bottom-cta {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .locanda-menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .locanda-header-title {
+    display: none;
+  }
+
+  .locanda-title {
+    letter-spacing: 0.38em;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    INTRO CINEMATOGRAFICA (5s)
 ═══════════════════════════════════════════════ */
 
