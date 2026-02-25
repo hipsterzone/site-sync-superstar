@@ -451,20 +451,32 @@ body.eden-body #root {
 
 /* LOCANDA EDEN: biscotto + gradiente verde (coerente col sito) */
 .hero-pill--locanda {
-  border-color: hsl(var(--eden-gold) / 0.55);
-  color: hsl(39 26% 92%);
+  border-color: hsl(var(--eden-gold) / 0.78);
+  color: hsl(33 38% 14%);
+  text-shadow: 0 1px 0 hsl(0 0% 100% / 0.28);
   background:
-    radial-gradient(circle at 18% 0%, hsl(var(--eden-pearl) / 0.92) 0%, transparent 52%),
-    linear-gradient(135deg, hsl(var(--eden-gold) / 0.36), hsl(var(--eden-emerald) / 0.18));
+    radial-gradient(circle at 18% 0%, hsl(var(--eden-pearl) / 0.9) 0%, transparent 52%),
+    linear-gradient(
+      135deg,
+      hsl(var(--eden-gold) / 0.78) 0%,
+      hsl(var(--eden-gold) / 0.52) 38%,
+      hsl(var(--eden-emerald) / 0.42) 100%
+    );
 }
 
 /* MASSERIA PETRULLO: bianco + gradiente verde erba + un po' di giallo */
 .hero-pill--masseria {
-  border-color: hsl(var(--eden-emerald) / 0.5);
-  color: hsl(225 64% 8% / 0.92);
+  border-color: hsl(var(--eden-emerald) / 0.7);
+  color: hsl(var(--eden-night) / 0.86);
+  text-shadow: 0 1px 0 hsl(0 0% 0% / 0.08);
   background:
     radial-gradient(circle at 18% 0%, hsl(var(--eden-pearl) / 0.98) 0%, transparent 52%),
-    linear-gradient(135deg, hsl(95 55% 44% / 0.26), hsl(55 92% 55% / 0.14));
+    linear-gradient(
+      135deg,
+      hsl(98 60% 42% / 0.38) 0%,
+      hsl(110 56% 44% / 0.32) 52%,
+      hsl(52 95% 56% / 0.3) 100%
+    );
 }
 
 
