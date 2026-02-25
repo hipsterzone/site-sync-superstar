@@ -4,6 +4,9 @@ import "@/styles/eden.css";
 import { toast } from "@/hooks/use-toast";
 import EdenIntroOverlay from "./EdenIntroOverlay";
 
+import headerLogo from "@/assets/eden-header-logo.png";
+import footerLogo from "@/assets/eden-footer-logo.png";
+
 type EdenLeafStatus = "loading" | "loaded" | "error" | "timeout";
 
 type EdenDebugInfo = {
@@ -926,7 +929,7 @@ export default function EdenLanding() {
         <header className="site-header">
           <div className={`header-inner ${isNavOpen ? "nav-open" : ""}`.trim()}>
             <a className="header-logo" href="#eden" aria-label="Vai a EDEN">
-              <img className="header-logo-img" src="/eden/eden-logo.jpg" alt="EDEN" loading="eager" />
+              <img className="header-logo-img" src={headerLogo} alt="EDEN food.wine.restaurant" loading="eager" />
               <div className="header-logo-copy">
                 <div className="header-logo-text">EDEN</div>
                 <div className="header-logo-sub">FOOD · WINE · RESTAURANT</div>
@@ -1700,6 +1703,7 @@ export default function EdenLanding() {
             <div className="footer-shell">
               <div className="f-grid">
                 <div className="f-col">
+                  <img className="f-logo" src={footerLogo} alt="EDEN food.wine.restaurant" loading="lazy" />
                   <div className="f-brand">EDEN</div>
                   <p className="f-desc">Food · Wine · Restaurant. Un Eden contemporaneo nel cuore della Puglia.</p>
                 </div>

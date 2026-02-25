@@ -2309,6 +2309,14 @@ body.eden-body #root {
   gap: 20px;
 }
 
+.f-logo {
+  display: block;
+  width: min(220px, 72%);
+  height: auto;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 14px 30px hsl(0 0% 0% / 0.55));
+}
+
 .f-brand {
   font-size: 1.4rem;
   letter-spacing: 0.4em;
