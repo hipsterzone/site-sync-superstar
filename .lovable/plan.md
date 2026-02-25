@@ -1,139 +1,180 @@
 
-## Obiettivo
-Aggiornare **/locanda-eden** (pagina “LOCANDA EDEN”) con:
-1) **Tasto “Torna indietro”** che porta **sempre** alla Home (`/`).
-2) **Hero “bella”** con:
-   - lo **stesso logo EDEN** dell’hero della home (`/eden/eden-hero-logo.png`)
-   - una scritta sotto tipo **“LOCANDA”** (stile simile alla home).
-3) Sezioni sotto:
-   - **Menù** (con contenuti “esempio realistici”)
-   - **Carta Vini** (contenuti esempio)
-   - **Galleria** (con immagini esempio)
-   - **Tasto Prenota** che apre **WhatsApp** con **messaggio precompilato** sul **numero già usato nel sito**.
+## Obiettivo (pagina /masseria-petrullo)
+Creare per **Masseria Petrullo** la “stessa cosa” come impostazione della Locanda (coerenza EDEN), ma con contenuti più snelli:
+1) **Tasto “← Torna a EDEN”** che porta sempre a `/`
+2) **Hero bella** con:
+   - **logo EDEN** (lo stesso della home: `/eden/eden-hero-logo.png`)
+   - scritta sotto: **MASSERIA PETRULLO** (confermato)
+   - CTA: **WhatsApp** + **Vedi galleria** (confermato)
+3) **Galleria “un po’ disordinata”** stile **Polaroid wall** (confermato)
+4) Sotto la galleria un testo secco:
+   - “Solo per eventi privati. Minimo 50 persone.”
+
+Vincolo: tutto deve restare **inerente al sito principale** (font, colori, atmosfera EDEN).
 
 ---
 
 ## Esplorazione (stato attuale)
-- `src/pages/LocandaEden.tsx` è ancora placeholder (titolo + “pagina in arrivo”).
-- Logo hero principale già presente in home: in `src/components/eden/EdenLanding.tsx`  
-  `src="/eden/eden-hero-logo.png"`.
-- Numero WhatsApp già usato nel progetto: `https://wa.me/393497152524` (in `EdenLanding.tsx`).
-- In `src/styles/eden.css` esistono già:
-  - la base tema EDEN (`.eden-theme`, palette, ecc.)
-  - stili “sezione” (`.eden-shell`, `.eden-title`, `.eden-sub`, ecc.)
-  - stili completi per una **gallery grid** (`.gallery-section`, `.gallery-grid`, `.gallery-item`, overlay, ecc.) riutilizzabili anche su Locanda.
+- `src/pages/MasseriaPetrullo.tsx` è ancora placeholder (titolo + “pagina in arrivo”).
+- `src/pages/LocandaEden.tsx` ha già:
+  - header pagina con back a `/`
+  - hero con aurora e CTA
+  - galleria con classi `.gallery-grid` / `.gallery-item`
+- `src/styles/eden.css` contiene già:
+  - palette e font EDEN
+  - stili galleria (masonry)
+  - stili “locanda-*” (header + hero + CTA) riutilizzabili come pattern.
 
 ---
 
-## Decisioni confermate (dalle tue risposte)
-- Tasto indietro: **sempre alla Home** (`/`)
-- WhatsApp: **stesso numero esistente**
-- Contenuti iniziali: **Esempi realistici** (poi li sostituiamo con i tuoi reali)
+## Design (come la facciamo “EDEN” ma diversa dalla Locanda)
+### Header pagina (coerente)
+- Replico lo **stesso pattern** della Locanda:
+  - header fisso con pill “← Torna a EDEN”
+  - titolo a destra “Masseria Petrullo” (solo desktop; su mobile può sparire come già fatto per Locanda)
 
----
+### Hero Masseria (bella ma “modificabile”)
+- Creo una hero dedicata `masseria-hero` con:
+  - aurora/gradiente coerenti (stesso mood EDEN, ma con una variante più “campagna/verde-oro” molto soft)
+  - logo `/eden/eden-hero-logo.png`
+  - titolo grande serif: **MASSERIA PETRULLO**
+  - sottotitolo breve (testo realistico ma neutro, facile da cambiare)
+  - CTA row:
+    - **Richiedi info su WhatsApp** (messaggio precompilato per eventi privati, minimo 50 persone)
+    - **Vedi galleria** (ancora a `#gallery`)
 
-## Design / Approccio (senza stravolgere EDEN)
-### Layout pagina
-- Mantengo `eden-html` / `eden-body` come già fatto (così lo sfondo e i globals EDEN restano coerenti).
-- Aggiungo un **header semplice di pagina** (non quello completo della home), con:
-  - “← Torna a EDEN” (link interno a `/`)
-  - opzionale micro-titolo “Locanda Eden” a destra (in stile soft)
+### Galleria “disordinata” = Polaroid wall
+- Non uso la galleria “masonry pulita” della Locanda: qui la faccio volutamente più “viva”.
+- Implementazione:
+  - grid responsiva (2–4 colonne a seconda del viewport)
+  - ogni card stile “polaroid”:
+    - bordo chiaro/perla, background “paper”
+    - ombra più presente + leggero highlight
+    - **rotazioni/offset leggeri** alternati (tramite classi o CSS variables per item)
+  - Mantengo overlay/titoli opzionali, ma più discreti (focus sulle foto)
 
-### Hero Locanda
-- Creo una sezione `locanda-hero` con:
-  - sfondo coerente EDEN (gradiente notturno + aurora soft)
-  - **logo**: `<img className="hero-logo" src="/eden/eden-hero-logo.png" ... />` per mantenere proporzioni/stile
-  - sotto: “LOCANDA” (o “LOCANDA EDEN” se preferisci, ma per ora seguo la tua frase “Locanda quasi simile” → “LOCANDA” come sub-title)
-  - breve descrizione 1 riga (esempio realistico) per dare “peso” alla hero
-
-### Menù + Carta vini
-- Struttura in due blocchi con card/colonne:
-  - Menù: antipasti, primi, secondi, dessert (esempi)
-  - Carta Vini: “Bollicine / Bianchi / Rossi / Rosati / Dessert” (esempi)
-- Implementazione “data-driven”: array di sezioni e items in TS, poi map in UI (così sarà facile sostituire con i contenuti reali).
-
-### Galleria
-- Riutilizzo gli stili già presenti (`.gallery-grid`, `.gallery-item`, overlay).
-- Inserisco 6–9 immagini “esempio” (URL esterni stabili) + titoli/tag.
-  - Quando mi mandi le foto vere, sostituiamo gli URL con asset in `public/` o `src/assets/`.
-
-### CTA Prenota WhatsApp
-- Bottone “Prenota su WhatsApp” che apre:
-  `https://wa.me/393497152524?text=<messaggio>`
-- Messaggio precompilato (esempio realistico), tipo:
-  ```
-  Ciao EDEN, vorrei prenotare per la LOCANDA.
-  Data:
-  Orario:
-  Persone:
-  Nome:
-  Note:
-  ```
-- Apertura in nuova tab con `target="_blank"` + `rel="noreferrer"`.
+### Testo finale (vincolo eventi)
+- Sotto la galleria, dentro un contenitore `eden-shell`, metto una riga ben leggibile:
+  - “Solo per eventi privati. Minimo 50 persone.”
+- Stile: uppercase soft / letter-spacing, colore `--eden-text-soft`, centrato.
 
 ---
 
 ## Piano di implementazione (step-by-step)
 
-### 1) Aggiornare `src/pages/LocandaEden.tsx` (da placeholder a pagina completa)
-- Tenere l’`useEffect` che applica `eden-html` / `eden-body`.
-- Sostituire il contenuto con:
-  1) **Header pagina** (fixed o sticky):
-     - `<Link to="/" className="locanda-back">← Torna a EDEN</Link>`
-  2) **Hero Locanda**:
-     - logo `/eden/eden-hero-logo.png` (stessa classe `hero-logo` per coerenza)
-     - titolo/subtitolo (LOCANDA) + riga descrizione
-     - CTA “Prenota su WhatsApp” (porta a `wa.me` con testo)
-  3) **Sezione Menù**
-  4) **Sezione Carta Vini**
-  5) **Sezione Galleria** (grid già pronta in CSS)
-  6) (Opzionale) ripetizione CTA “Prenota” a fine pagina (per conversione)
+### 1) Aggiornare `src/pages/MasseriaPetrullo.tsx`
+Sostituire il placeholder con una pagina completa in stile EDEN:
 
-### 2) Aggiungere stili dedicati in `src/styles/eden.css`
-Aggiungerò classi nuove senza toccare gli stili della home:
-- `.locanda-header`, `.locanda-back` (aspetto “pill” soft, hover/focus accessibile)
-- `.locanda-hero`, `.locanda-hero-inner`, `.locanda-kicker`, `.locanda-title`, `.locanda-desc`
-- `.locanda-cta` (bottone WhatsApp coerente con EDEN: emerald glow, testo leggibile)
-- `.locanda-menu-grid`, `.locanda-card`, `.locanda-card-title`, `.locanda-item`, `.locanda-item-name`, `.locanda-item-desc`, `.locanda-item-price`
-- Piccole media query per mobile (padding e colonne)
+**A. Hook globali EDEN**
+- Tenere l’attuale `useEffect` che aggiunge/rimuove `eden-html` e `eden-body`.
 
-### 3) Implementare dati “esempio realistici”
-Dentro `LocandaEden.tsx`:
-- costanti tipo:
-  - `const menuSections = [...]`
-  - `const wineSections = [...]`
-  - `const galleryItems = [...]`
-- (Importante) tenere i dati facilmente sostituibili quando mi dai:
-  - piatti veri, prezzi veri
-  - etichette vini
-  - foto reali
+**B. WhatsApp URL (precompilato)**
+- Creare `waUrl` con `useMemo`, come in Locanda, usando lo stesso numero:
+  - `https://wa.me/393497152524?text=${encodeURIComponent(msg)}`
+- Messaggio consigliato (realistico e coerente con richiesta):
+  ```text
+  Ciao EDEN, vorrei informazioni per un EVENTO PRIVATO presso MASSERIA PETRULLO.
+  
+  Data:
+  Orario:
+  Numero ospiti (min. 50):
+  Nome:
+  Note:
+  ```
+
+**C. Layout pagina**
+- `<main className="page masseria-page">`
+
+**D. Header**
+- Copiare il pattern Locanda:
+  - `<header className="masseria-header"> ... <Link to="/" className="masseria-back">...</Link> ... </header>`
+
+**E. Hero**
+- Sezione:
+  - `<section className="masseria-hero" aria-labelledby="masseria-hero-title">`
+  - aurora `<div className="masseria-hero-aurora" aria-hidden="true" />`
+  - contenuto:
+    - `<img className="hero-logo" src="/eden/eden-hero-logo.png" ... />`
+    - `<h1 className="masseria-title">MASSERIA PETRULLO</h1>`
+    - `<p className="masseria-desc">...</p>`
+    - CTA row:
+      - `<a className="masseria-cta" href={waUrl} target="_blank" rel="noreferrer">Richiedi info su WhatsApp</a>`
+      - `<a className="masseria-cta masseria-cta--ghost" href="#gallery">Vedi galleria</a>`
+
+**F. Galleria polaroid**
+- Sezione:
+  - `<section id="gallery" className="masseria-gallery" aria-labelledby="masseria-gallery-title">`
+- Dataset immagini “esempio” con 10–14 items (picsum seeds dedicati “eden-masseria-*”).
+- Render:
+  - `<div className="masseria-polaroid-grid">`
+  - Ogni item:
+    - wrapper con classi `masseria-polaroid` + una classe variante (es. `tilt-1..tilt-6`) oppure inline CSS vars (`--r`, `--x`, `--y`)
+    - `<img ... />`
+    - caption sotto (opzionale) in stile polaroid (testo piccolo, serif/sans mix)
+
+**G. Testo vincolo eventi**
+- Subito sotto la galleria:
+  - `<section className="masseria-note">`
+  - dentro `eden-shell`:
+    - `<p className="masseria-note-text">Solo per eventi privati. Minimo 50 persone.</p>`
+
+---
+
+### 2) Aggiornare `src/styles/eden.css`
+Aggiungere un blocco dedicato “MASSERIA” senza toccare Locanda/Home:
+
+**Header**
+- `.masseria-header`, `.masseria-header-inner`, `.masseria-back`, `.masseria-header-title`
+  - copiare il look&feel di `.locanda-header` con piccole variazioni (accento più gold/emerald soft)
+
+**Hero**
+- `.masseria-hero`, `.masseria-hero-aurora`, `.masseria-hero-inner`, `.masseria-title`, `.masseria-desc`
+- CTA
+  - `.masseria-cta`, `.masseria-cta--ghost` (stessa ergonomia della locanda-cta, ma coerente con hero Masseria)
+
+**Polaroid wall**
+- `.masseria-polaroid-grid`
+  - grid responsiva (gap più ampio, feel “gallery wall”)
+- `.masseria-polaroid`
+  - background perla/paper
+  - border sottile
+  - shadow più fotografica (drop shadow + glow leggero)
+  - padding “cornice” (effetto polaroid)
+- Rotazioni/offset:
+  - classi tipo `.tilt-1 ... .tilt-6` con `transform: rotate(...) translate(...)`
+  - su mobile ridurre tilt/offset per non rompere la leggibilità (media query)
+- Hover:
+  - al hover aumentare leggermente scale e riportare rotazione verso 0 (opzionale) per dare interazione premium
+
+**Nota eventi**
+- `.masseria-note`, `.masseria-note-text`
+  - centrato, letter-spacing, colore soft, max-width controllato
 
 ---
 
 ## Verifiche end-to-end (obbligatorie)
-1) Vai su `/locanda-eden`:
-   - vedi subito il **tasto “← Torna a EDEN”**
-   - clic → torna a `/`
-2) Hero:
-   - logo **identico** a quello della home (stesso file `/eden/eden-hero-logo.png`)
-   - scritta “LOCANDA” sotto, ben leggibile su mobile/desktop
-3) Sezioni:
-   - Menù e Carta Vini visivamente “premium” e leggibili
-   - Galleria: griglia funzionante (hover overlay su desktop)
-4) Bottone WhatsApp:
-   - clic → apre `wa.me/393497152524` con **testo precompilato**
-   - verifica anche su mobile (apertura WhatsApp app / web)
+1) Vai su `/masseria-petrullo`
+2) Clic “← Torna a EDEN” ⇒ deve andare sempre a `/`
+3) Hero:
+   - logo EDEN visibile
+   - titolo “MASSERIA PETRULLO”
+   - bottoni: WhatsApp apre chat con messaggio precompilato; “Vedi galleria” scrolla a `#gallery`
+4) Galleria:
+   - effetto “polaroid wall” realmente disordinato ma elegante
+   - su mobile: niente sovrapposizioni/overflow, rotazioni più leggere
+5) Testo finale:
+   - presente e leggibile: “Solo per eventi privati. Minimo 50 persone.”
 
 ---
 
 ## File coinvolti
-- **EDIT** `src/pages/LocandaEden.tsx`
+- **EDIT** `src/pages/MasseriaPetrullo.tsx`
 - **EDIT** `src/styles/eden.css`
 
 ---
 
-## Dettagli tecnici (per trasparenza)
-- Navigazione back: userò `Link` di `react-router-dom` verso `/` (come richiesto “sempre Home”).
-- Logo hero: uso path pubblico `/eden/eden-hero-logo.png` (già usato e quindi “garantito” nel progetto).
-- WhatsApp: URL `https://wa.me/393497152524?text=${encodeURIComponent(message)}` con `target="_blank"` e `rel="noreferrer"`.
-- Galleria: riuso delle classi esistenti in `eden.css` per evitare duplicazioni e mantenere coerenza estetica EDEN.
+## Dettagli tecnici (trasparenza)
+- Routing già esistente in `src/App.tsx` (`/masseria-petrullo`)
+- Logo hero: path pubblico già usato e “sicuro” → `/eden/eden-hero-logo.png`
+- WhatsApp: `wa.me/393497152524` + `encodeURIComponent` per il testo
+- “Polaroid wall”: implementata con CSS grid + transform per-item (classi o CSS variables) per ottenere disordine controllato senza JS complesso.
