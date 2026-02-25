@@ -420,6 +420,7 @@ body.eden-body #root {
 }
 
 .hero-pill {
+  display: inline-block;
   padding: 7px 16px;
   border-radius: 999px;
   border: 1px solid hsl(135 13% 85% / 0.8);
@@ -427,7 +428,45 @@ body.eden-body #root {
   color: hsl(35 12% 87%);
   box-shadow: 0 8px 24px hsl(0 0% 0% / 0.35);
   backdrop-filter: blur(10px);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
 }
+
+.hero-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px hsl(0 0% 0% / 0.42);
+  filter: brightness(1.03);
+}
+
+.hero-pill:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsl(var(--eden-emerald) / 0.28),
+    0 12px 30px hsl(0 0% 0% / 0.42);
+}
+
+/* LOCANDA EDEN: biscotto + gradiente verde (coerente col sito) */
+.hero-pill--locanda {
+  border-color: hsl(var(--eden-gold) / 0.55);
+  color: hsl(39 26% 92%);
+  background:
+    radial-gradient(circle at 18% 0%, hsl(var(--eden-pearl) / 0.92) 0%, transparent 52%),
+    linear-gradient(135deg, hsl(var(--eden-gold) / 0.36), hsl(var(--eden-emerald) / 0.18));
+}
+
+/* MASSERIA PETRULLO: bianco + gradiente verde erba + un po' di giallo */
+.hero-pill--masseria {
+  border-color: hsl(var(--eden-emerald) / 0.5);
+  color: hsl(225 64% 8% / 0.92);
+  background:
+    radial-gradient(circle at 18% 0%, hsl(var(--eden-pearl) / 0.98) 0%, transparent 52%),
+    linear-gradient(135deg, hsl(95 55% 44% / 0.26), hsl(55 92% 55% / 0.14));
+}
+
 
 .hero-scroll {
   /* Optical centering: keep the CTA visually centered but nudged left */
