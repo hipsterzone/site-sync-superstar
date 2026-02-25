@@ -983,10 +983,10 @@ export default function EdenLanding() {
                 </p>
                 <div className="hero-badge-row">
                   <Link to="/locanda-eden" className="hero-pill hero-pill--locanda">
-                    Adelfia · Puglia
+                    LOCANDA EDEN
                   </Link>
                   <Link to="/masseria-petrullo" className="hero-pill hero-pill--masseria">
-                    Food · Wine · Eventi
+                    MASSERIA PETRULLO
                   </Link>
                 </div>
               </div>
