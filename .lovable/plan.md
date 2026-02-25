@@ -1,180 +1,102 @@
 
-## Obiettivo (pagina /masseria-petrullo)
-Creare per **Masseria Petrullo** la “stessa cosa” come impostazione della Locanda (coerenza EDEN), ma con contenuti più snelli:
-1) **Tasto “← Torna a EDEN”** che porta sempre a `/`
-2) **Hero bella** con:
-   - **logo EDEN** (lo stesso della home: `/eden/eden-hero-logo.png`)
-   - scritta sotto: **MASSERIA PETRULLO** (confermato)
-   - CTA: **WhatsApp** + **Vedi galleria** (confermato)
-3) **Galleria “un po’ disordinata”** stile **Polaroid wall** (confermato)
-4) Sotto la galleria un testo secco:
-   - “Solo per eventi privati. Minimo 50 persone.”
+## Cosa vuoi ottenere (sul modulo “Richiedi una consulenza” in `src/components/eden/EdenLanding.tsx`)
+1) La richiesta deve diventare **un messaggio WhatsApp** che includa **tutte le scelte e i campi compilati**.
+2) Tutti i campi devono essere **obbligatori** (incluse le “chips” dell’occasione).
+3) Il bottone **“Invia la richiesta”** deve **aprire WhatsApp** con il messaggio già pronto.
+4) Sotto al bottone principale vanno rimossi:
+   - “Apri WhatsApp”
+   - “Copia messaggio”
+   Deve rimanere **solo “Chiama”**.
 
-Vincolo: tutto deve restare **inerente al sito principale** (font, colori, atmosfera EDEN).
+Nota: gran parte della logica “messaggio WhatsApp con campi + validazione” è già presente (funzioni `getEventPayloadFromForm`, `validateEventPayload`, `buildEventMessage`, `prepareEventWhatsApp`, `onEventSubmit`). Faremo quindi un adeguamento mirato su UI/obbligatorietà e comportamento.
 
 ---
 
-## Esplorazione (stato attuale)
-- `src/pages/MasseriaPetrullo.tsx` è ancora placeholder (titolo + “pagina in arrivo”).
-- `src/pages/LocandaEden.tsx` ha già:
-  - header pagina con back a `/`
-  - hero con aurora e CTA
-  - galleria con classi `.gallery-grid` / `.gallery-item`
-- `src/styles/eden.css` contiene già:
-  - palette e font EDEN
-  - stili galleria (masonry)
-  - stili “locanda-*” (header + hero + CTA) riutilizzabili come pattern.
+## Stato attuale (da codice)
+Nel blocco Eventi Premium (linee ~1522+):
+- Il form è `ref={eventFormRef}` e i valori vengono letti via `querySelector`.
+- `validateEventPayload` già rende **di fatto obbligatori**: tipo, nome, tel, ospiti, note.
+- “Invia la richiesta” (`onEventSubmit`) **apre già WhatsApp** con URL `https://wa.me/393497152524?text=...`.
+- In basso c’è `ep-fallbacks` con 3 azioni: Apri WhatsApp / Copia messaggio / Chiama.
 
 ---
 
-## Design (come la facciamo “EDEN” ma diversa dalla Locanda)
-### Header pagina (coerente)
-- Replico lo **stesso pattern** della Locanda:
-  - header fisso con pill “← Torna a EDEN”
-  - titolo a destra “Masseria Petrullo” (solo desktop; su mobile può sparire come già fatto per Locanda)
+## Modifiche richieste (design + UX)
+### A) Rendere obbligatoria anche la selezione “occasione” a livello HTML
+Attualmente l’occasione è obbligatoria via JS (`validateEventPayload`), ma non via HTML.
+Faremo entrambe:
+- Lasciamo la validazione JS (serve comunque).
+- Aggiungiamo `required` su **una** delle radio (pattern HTML standard): basta mettere `required` sul primo input `name="tipo"` per forzare la selezione nel gruppo.
 
-### Hero Masseria (bella ma “modificabile”)
-- Creo una hero dedicata `masseria-hero` con:
-  - aurora/gradiente coerenti (stesso mood EDEN, ma con una variante più “campagna/verde-oro” molto soft)
-  - logo `/eden/eden-hero-logo.png`
-  - titolo grande serif: **MASSERIA PETRULLO**
-  - sottotitolo breve (testo realistico ma neutro, facile da cambiare)
-  - CTA row:
-    - **Richiedi info su WhatsApp** (messaggio precompilato per eventi privati, minimo 50 persone)
-    - **Vedi galleria** (ancora a `#gallery`)
+### B) Rendere i campi “veramente” campi form (migliora autofill/semantica)
+Senza stravolgere struttura/stile:
+- Aggiungere `name="nome"` a `#ep-nome`
+- `name="tel"` a `#ep-tel`
+- `name="ospiti"` a `#ep-ospiti`
+- `name="note"` a `#ep-note`
+Questo non cambia il layout ma migliora accessibilità e compilazione.
 
-### Galleria “disordinata” = Polaroid wall
-- Non uso la galleria “masonry pulita” della Locanda: qui la faccio volutamente più “viva”.
-- Implementazione:
-  - grid responsiva (2–4 colonne a seconda del viewport)
-  - ogni card stile “polaroid”:
-    - bordo chiaro/perla, background “paper”
-    - ombra più presente + leggero highlight
-    - **rotazioni/offset leggeri** alternati (tramite classi o CSS variables per item)
-  - Mantengo overlay/titoli opzionali, ma più discreti (focus sulle foto)
+### C) “Invia la richiesta” = WhatsApp (già ok), ma messaggio deve includere le scelte
+Il messaggio già include:
+- Occasione (tipo)
+- Nome
+- Telefono
+- Ospiti
+- Dettagli (note)
 
-### Testo finale (vincolo eventi)
-- Sotto la galleria, dentro un contenitore `eden-shell`, metto una riga ben leggibile:
-  - “Solo per eventi privati. Minimo 50 persone.”
-- Stile: uppercase soft / letter-spacing, colore `--eden-text-soft`, centrato.
+Intervento minimo:
+- Eventualmente rinominare intestazione messaggio per renderla più “commerciale”/chiara (es. “Richiesta consulenza eventi · EDEN”).
+- Aggiungere una riga “Canale: WhatsApp” o simile solo se la vuoi (facoltativo). (Di base non serve.)
 
----
-
-## Piano di implementazione (step-by-step)
-
-### 1) Aggiornare `src/pages/MasseriaPetrullo.tsx`
-Sostituire il placeholder con una pagina completa in stile EDEN:
-
-**A. Hook globali EDEN**
-- Tenere l’attuale `useEffect` che aggiunge/rimuove `eden-html` e `eden-body`.
-
-**B. WhatsApp URL (precompilato)**
-- Creare `waUrl` con `useMemo`, come in Locanda, usando lo stesso numero:
-  - `https://wa.me/393497152524?text=${encodeURIComponent(msg)}`
-- Messaggio consigliato (realistico e coerente con richiesta):
-  ```text
-  Ciao EDEN, vorrei informazioni per un EVENTO PRIVATO presso MASSERIA PETRULLO.
-  
-  Data:
-  Orario:
-  Numero ospiti (min. 50):
-  Nome:
-  Note:
+### D) Rimuovere i bottoni sotto: lasciare solo “Chiama”
+Modifica UI:
+- Sostituire il blocco:
+  ```tsx
+  <div className="ep-fallbacks">
+    [Apri WhatsApp]
+    [Copia messaggio]
+    [Chiama]
+  </div>
   ```
+  con:
+  ```tsx
+  <div className="ep-fallbacks" aria-label="Contatto telefonico">
+    <a className="ep-fallback" href="tel:+393497152524">Chiama</a>
+  </div>
+  ```
+Oppure, se vuoi ancora un layout più pulito, togliamo completamente `ep-fallbacks` e mettiamo “Chiama” come link secondario vicino al bottone principale (ma tu hai chiesto “sotto rimane solo chiama”, quindi lo lasciamo sotto).
 
-**C. Layout pagina**
-- `<main className="page masseria-page">`
+### E) Obbligatorietà “hard” + messaggio coerente = miglioramento validazione (senza introdurre nuove librerie)
+Già c’è una validazione manuale; la rendiamo più robusta:
+- `ospiti`: garantire che sia un numero > 0 (o almeno “>= 1”), non solo stringa non vuota.
+- `tel`: trim + limite già c’è; aggiungere controllo minimo lunghezza (es. >= 6) per evitare valori troppo corti.
+- Se errore: già c’è `toast({ variant: "destructive" })` → manteniamo.
 
-**D. Header**
-- Copiare il pattern Locanda:
-  - `<header className="masseria-header"> ... <Link to="/" className="masseria-back">...</Link> ... </header>`
-
-**E. Hero**
-- Sezione:
-  - `<section className="masseria-hero" aria-labelledby="masseria-hero-title">`
-  - aurora `<div className="masseria-hero-aurora" aria-hidden="true" />`
-  - contenuto:
-    - `<img className="hero-logo" src="/eden/eden-hero-logo.png" ... />`
-    - `<h1 className="masseria-title">MASSERIA PETRULLO</h1>`
-    - `<p className="masseria-desc">...</p>`
-    - CTA row:
-      - `<a className="masseria-cta" href={waUrl} target="_blank" rel="noreferrer">Richiedi info su WhatsApp</a>`
-      - `<a className="masseria-cta masseria-cta--ghost" href="#gallery">Vedi galleria</a>`
-
-**F. Galleria polaroid**
-- Sezione:
-  - `<section id="gallery" className="masseria-gallery" aria-labelledby="masseria-gallery-title">`
-- Dataset immagini “esempio” con 10–14 items (picsum seeds dedicati “eden-masseria-*”).
-- Render:
-  - `<div className="masseria-polaroid-grid">`
-  - Ogni item:
-    - wrapper con classi `masseria-polaroid` + una classe variante (es. `tilt-1..tilt-6`) oppure inline CSS vars (`--r`, `--x`, `--y`)
-    - `<img ... />`
-    - caption sotto (opzionale) in stile polaroid (testo piccolo, serif/sans mix)
-
-**G. Testo vincolo eventi**
-- Subito sotto la galleria:
-  - `<section className="masseria-note">`
-  - dentro `eden-shell`:
-    - `<p className="masseria-note-text">Solo per eventi privati. Minimo 50 persone.</p>`
+(Se in futuro vuoi, possiamo migrare a `react-hook-form` + `zod` per una validazione ancora più pulita, ma non è necessario per questa richiesta.)
 
 ---
 
-### 2) Aggiornare `src/styles/eden.css`
-Aggiungere un blocco dedicato “MASSERIA” senza toccare Locanda/Home:
-
-**Header**
-- `.masseria-header`, `.masseria-header-inner`, `.masseria-back`, `.masseria-header-title`
-  - copiare il look&feel di `.locanda-header` con piccole variazioni (accento più gold/emerald soft)
-
-**Hero**
-- `.masseria-hero`, `.masseria-hero-aurora`, `.masseria-hero-inner`, `.masseria-title`, `.masseria-desc`
-- CTA
-  - `.masseria-cta`, `.masseria-cta--ghost` (stessa ergonomia della locanda-cta, ma coerente con hero Masseria)
-
-**Polaroid wall**
-- `.masseria-polaroid-grid`
-  - grid responsiva (gap più ampio, feel “gallery wall”)
-- `.masseria-polaroid`
-  - background perla/paper
-  - border sottile
-  - shadow più fotografica (drop shadow + glow leggero)
-  - padding “cornice” (effetto polaroid)
-- Rotazioni/offset:
-  - classi tipo `.tilt-1 ... .tilt-6` con `transform: rotate(...) translate(...)`
-  - su mobile ridurre tilt/offset per non rompere la leggibilità (media query)
-- Hover:
-  - al hover aumentare leggermente scale e riportare rotazione verso 0 (opzionale) per dare interazione premium
-
-**Nota eventi**
-- `.masseria-note`, `.masseria-note-text`
-  - centrato, letter-spacing, colore soft, max-width controllato
+## File da modificare
+1) **`src/components/eden/EdenLanding.tsx`**
+   - Aggiornare inputs radio/text/textarea (required/name)
+   - Aggiornare UI del blocco “ep-fallbacks” lasciando solo “Chiama”
+   - (Opzionale) micro-tuning su `buildEventMessage` e `validateEventPayload` per numeric checks
 
 ---
 
-## Verifiche end-to-end (obbligatorie)
-1) Vai su `/masseria-petrullo`
-2) Clic “← Torna a EDEN” ⇒ deve andare sempre a `/`
-3) Hero:
-   - logo EDEN visibile
-   - titolo “MASSERIA PETRULLO”
-   - bottoni: WhatsApp apre chat con messaggio precompilato; “Vedi galleria” scrolla a `#gallery`
-4) Galleria:
-   - effetto “polaroid wall” realmente disordinato ma elegante
-   - su mobile: niente sovrapposizioni/overflow, rotazioni più leggere
-5) Testo finale:
-   - presente e leggibile: “Solo per eventi privati. Minimo 50 persone.”
+## Checklist test end-to-end (importante)
+1) Vai in Home → scorri a “Eventi & Private Parties” → compila il form:
+   - Prova a cliccare “Invia la richiesta” senza selezionare l’occasione: deve bloccare e mostrare errore.
+   - Prova senza nome / tel / ospiti / note: deve bloccare e mostrare errore.
+2) Compila tutto correttamente → “Invia la richiesta”:
+   - Deve aprire una nuova scheda WhatsApp con messaggio precompilato.
+   - Il messaggio deve contenere **Occasione, Nome, Telefono, Ospiti, Dettagli**.
+3) Verifica che sotto al bottone principale ci sia **solo “Chiama”** (niente “Apri WhatsApp”, niente “Copia messaggio”).
+4) Mobile: ripetere test per assicurarsi che WhatsApp si apra correttamente e che il layout resti pulito.
 
 ---
 
-## File coinvolti
-- **EDIT** `src/pages/MasseriaPetrullo.tsx`
-- **EDIT** `src/styles/eden.css`
-
----
-
-## Dettagli tecnici (trasparenza)
-- Routing già esistente in `src/App.tsx` (`/masseria-petrullo`)
-- Logo hero: path pubblico già usato e “sicuro” → `/eden/eden-hero-logo.png`
-- WhatsApp: `wa.me/393497152524` + `encodeURIComponent` per il testo
-- “Polaroid wall”: implementata con CSS grid + transform per-item (classi o CSS variables) per ottenere disordine controllato senza JS complesso.
+## Dettagli tecnici (per trasparenza)
+- Non useremo `action` del form: continueremo con `window.open(waUrl, "_blank", "noopener")`.
+- `required` sul gruppo radio: HTML supporta la validazione se almeno uno dei radio con lo stesso `name` ha `required`.
+- Continuiamo a usare `encodeURIComponent(msg)` (già presente) per evitare problemi con caratteri speciali nel testo WhatsApp.
