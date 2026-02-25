@@ -805,8 +805,14 @@ export default function EdenLanding() {
   const validateEventPayload = (p: ReturnType<typeof getEventPayloadFromForm>) => {
     if (!p.tipo) return "Seleziona l'occasione.";
     if (!p.nome) return "Inserisci nome e cognome.";
-    if (!p.tel) return "Inserisci un telefono/WhatsApp.";
-    if (!p.ospiti) return "Inserisci il numero di ospiti.";
+
+    const telTrimmed = String(p.tel || "").trim();
+    if (!telTrimmed) return "Inserisci un telefono/WhatsApp.";
+    if (telTrimmed.replace(/\s+/g, "").length < 6) return "Inserisci un telefono valido.";
+
+    const ospitiNum = Number.parseInt(String(p.ospiti || "").trim(), 10);
+    if (!Number.isFinite(ospitiNum) || ospitiNum < 1) return "Inserisci il numero di ospiti (minimo 1).";
+
     if (!p.note) return "Inserisci qualche dettaglio (note).";
     return "";
   };
@@ -1525,13 +1531,30 @@ export default function EdenLanding() {
                     <p>Raccontaci la tua idea. Il nostro team ti risponderà con una proposta su misura.</p>
                   </div>
 
-                  <form className="ep-form" id="eden-event-form" ref={eventFormRef}>
+                  <form
+                    className="ep-form"
+                    id="eden-event-form"
+                    ref={eventFormRef}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = eventFormRef.current;
+                      if (!form) return;
+
+                      // Enforce native required fields (including radio group)
+                      if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                      }
+
+                      onEventSubmit();
+                    }}
+                  >
                     {/* Chips per la selezione evento */}
                     <div className="ep-chips-group">
                       <span className="ep-chips-label">Seleziona l'occasione</span>
                       <div className="ep-chips">
                         <label className="ep-chip">
-                          <input type="radio" name="tipo" value="Compleanno" />
+                          <input type="radio" name="tipo" value="Compleanno" required />
                           <span>Compleanno</span>
                         </label>
                         <label className="ep-chip">
@@ -1555,7 +1578,7 @@ export default function EdenLanding() {
 
                     {/* Floating Label Inputs */}
                     <div className="ep-input-group">
-                      <input type="text" id="ep-nome" className="ep-input" required />
+                      <input type="text" id="ep-nome" name="nome" className="ep-input" required />
                       <label htmlFor="ep-nome" className="ep-label">
                         Nome e Cognome
                       </label>
@@ -1564,14 +1587,14 @@ export default function EdenLanding() {
 
                     <div className="ep-row">
                       <div className="ep-input-group">
-                        <input type="tel" id="ep-tel" className="ep-input" required />
+                        <input type="tel" id="ep-tel" name="tel" className="ep-input" required />
                         <label htmlFor="ep-tel" className="ep-label">
                           Telefono / WhatsApp
                         </label>
                         <div className="ep-line" />
                       </div>
                       <div className="ep-input-group">
-                        <input type="number" id="ep-ospiti" className="ep-input" required />
+                        <input type="number" id="ep-ospiti" name="ospiti" className="ep-input" required min={1} />
                         <label htmlFor="ep-ospiti" className="ep-label">
                           N° Ospiti stimato
                         </label>
@@ -1580,25 +1603,19 @@ export default function EdenLanding() {
                     </div>
 
                     <div className="ep-input-group">
-                      <textarea id="ep-note" className="ep-input ep-textarea" required />
+                      <textarea id="ep-note" name="note" className="ep-input ep-textarea" required />
                       <label htmlFor="ep-note" className="ep-label">
                         Dettagli, desideri, intolleranze...
                       </label>
                       <div className="ep-line" />
                     </div>
 
-                    <button type="button" className="ep-submit-btn" onClick={onEventSubmit}>
+                    <button type="submit" className="ep-submit-btn">
                       <span>Invia la richiesta</span>
                       <span className="ep-btn-arrow">→</span>
                     </button>
 
-                    <div className="ep-fallbacks" aria-label="Alternative di contatto">
-                      <button type="button" className="ep-fallback" onClick={onEventOpenWhatsApp}>
-                        Apri WhatsApp
-                      </button>
-                      <button type="button" className="ep-fallback" onClick={onEventCopyMessage}>
-                        Copia messaggio
-                      </button>
+                    <div className="ep-fallbacks" aria-label="Contatto telefonico">
                       <a className="ep-fallback" href="tel:+393497152524">
                         Chiama
                       </a>
