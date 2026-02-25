@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Link } from "react-router-dom";
 import "@/styles/eden.css";
 import { toast } from "@/hooks/use-toast";
 import EdenIntroOverlay from "./EdenIntroOverlay";
@@ -981,8 +982,12 @@ export default function EdenLanding() {
                   Un giardino di pietra, luce e sapori mediterranei. Un Eden contemporaneo nel cuore della Puglia.
                 </p>
                 <div className="hero-badge-row">
-                  <div className="hero-pill">Adelfia · Puglia</div>
-                  <div className="hero-pill">Food · Wine · Eventi</div>
+                  <Link to="/locanda-eden" className="hero-pill hero-pill--locanda">
+                    Adelfia · Puglia
+                  </Link>
+                  <Link to="/masseria-petrullo" className="hero-pill hero-pill--masseria">
+                    Food · Wine · Eventi
+                  </Link>
                 </div>
               </div>
             </div>
