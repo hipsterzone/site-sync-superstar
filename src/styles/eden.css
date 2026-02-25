@@ -3322,6 +3322,370 @@ body.eden-lock {
   }
 }
 
+
+/* ═══════════════════════════════════════════════
+   MASSERIA PETRULLO · SUBPAGE
+═══════════════════════════════════════════════ */
+
+.masseria-page {
+  min-height: 100vh;
+}
+
+.masseria-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 14px 18px;
+  pointer-events: none;
+}
+
+.masseria-header-inner {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background:
+    radial-gradient(circle at 0 0, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    hsl(225 64% 3% / 0.62);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 44px hsl(0 0% 0% / 0.65);
+  pointer-events: auto;
+}
+
+.masseria-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: hsl(39 26% 92%);
+
+  border: 1px solid hsl(0 0% 100% / 0.14);
+  background: hsl(0 0% 0% / 0.18);
+  box-shadow: 0 12px 30px hsl(0 0% 0% / 0.55);
+
+  pointer-events: auto;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.masseria-back:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--eden-emerald) / 0.44);
+  background: hsl(0 0% 0% / 0.24);
+}
+
+.masseria-back:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsl(var(--eden-emerald) / 0.24),
+    0 12px 30px hsl(0 0% 0% / 0.55);
+}
+
+.masseria-header-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: hsl(0 0% 100% / 0.55);
+  pointer-events: none;
+}
+
+.masseria-hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 110px 18px 60px;
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at 0 0, hsl(var(--eden-bg-nw)) 0%, transparent 58%),
+    radial-gradient(circle at 100% 0, hsl(var(--eden-bg-ne)) 0%, transparent 58%),
+    radial-gradient(circle at 0 100%, hsl(var(--eden-bg-sw)) 0%, transparent 62%),
+    hsl(var(--eden-night));
+}
+
+.masseria-hero-aurora {
+  position: absolute;
+  inset: -24%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.92;
+  background:
+    radial-gradient(circle at 18% 8%, hsl(110 56% 44% / 0.24) 0%, transparent 55%),
+    radial-gradient(circle at 92% 84%, hsl(36 53% 87% / 0.22) 0%, transparent 58%),
+    radial-gradient(circle at 50% 60%, hsl(var(--eden-emerald) / 0.12) 0%, transparent 64%);
+  filter: blur(10px);
+  animation: auroraDrift 24s ease-in-out infinite alternate;
+}
+
+.masseria-hero-inner {
+  max-width: 1180px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.masseria-hero-content {
+  text-align: center;
+  padding: 34px 18px 22px;
+}
+
+.masseria-title {
+  margin-top: 18px;
+  font-family: var(--eden-font-serif);
+  font-size: clamp(2.9rem, 6.2vw, 4.9rem);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  line-height: 1.08;
+  background: linear-gradient(135deg, hsl(36 60% 98%), hsl(35 60% 78%), hsl(31 38% 53%));
+  -webkit-background-clip: text;
+  color: transparent;
+  background-size: 260%;
+  background-position: 0% 50%;
+  animation: lightSweep 9s linear infinite;
+}
+
+.masseria-desc {
+  margin-top: 18px;
+  max-width: 42rem;
+  margin-inline: auto;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: hsl(var(--eden-text-soft));
+}
+
+.masseria-cta-row {
+  margin-top: 26px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.masseria-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+
+  border: 1px solid hsl(var(--eden-emerald) / 0.38);
+  color: hsl(39 26% 92%);
+  background:
+    radial-gradient(circle at 16% 0, hsl(0 0% 100% / 0.12) 0%, transparent 55%),
+    hsl(225 64% 3% / 0.62);
+  box-shadow:
+    0 12px 34px hsl(0 0% 0% / 0.58),
+    0 0 52px hsl(var(--eden-emerald) / 0.12);
+
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.masseria-cta:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--eden-emerald) / 0.62);
+  box-shadow:
+    0 16px 46px hsl(0 0% 0% / 0.62),
+    0 0 74px hsl(var(--eden-emerald) / 0.18);
+}
+
+.masseria-cta:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsl(var(--eden-emerald) / 0.22),
+    0 16px 46px hsl(0 0% 0% / 0.62),
+    0 0 74px hsl(var(--eden-emerald) / 0.18);
+}
+
+.masseria-cta--ghost {
+  border-color: hsl(0 0% 100% / 0.18);
+  background: hsl(0 0% 0% / 0.18);
+}
+
+.masseria-gallery {
+  padding: 64px 0 22px;
+}
+
+.masseria-section-head {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.masseria-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(0 0% 100% / 0.58);
+  margin-bottom: 10px;
+}
+
+.masseria-h2 {
+  letter-spacing: 0.22em;
+}
+
+/* Polaroid wall */
+.masseria-polaroid-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1040px) {
+  .masseria-polaroid-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .masseria-polaroid-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+.masseria-polaroid {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid hsl(0 0% 100% / 0.12);
+  background:
+    radial-gradient(circle at 18% 0, hsl(0 0% 100% / 0.14) 0%, transparent 55%),
+    hsl(var(--eden-pearl) / 0.92);
+  padding: 12px 12px 18px;
+  box-shadow:
+    0 22px 60px hsl(0 0% 0% / 0.62),
+    0 0 0 1px hsl(0 0% 0% / 0.35),
+    0 0 46px hsl(var(--eden-emerald) / 0.08);
+  transform: translate3d(0, 0, 0) rotate(var(--r, 0deg)) translate(var(--x, 0px), var(--y, 0px));
+  will-change: transform;
+  transition: transform 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+}
+
+.masseria-polaroid:hover {
+  transform: translate3d(0, -2px, 0) rotate(0deg);
+  box-shadow:
+    0 26px 76px hsl(0 0% 0% / 0.68),
+    0 0 0 1px hsl(0 0% 0% / 0.42),
+    0 0 60px hsl(var(--eden-emerald) / 0.12);
+  filter: brightness(1.02);
+}
+
+.masseria-polaroid-media {
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: hsl(0 0% 0% / 0.18);
+}
+
+.masseria-polaroid-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.masseria-polaroid-caption {
+  margin-top: 12px;
+  font-family: var(--eden-font-serif);
+  color: hsl(var(--eden-night) / 0.88);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+
+/* Controlled disorder */
+.masseria-polaroid.tilt-1 {
+  --r: -2.2deg;
+  --x: -6px;
+  --y: 2px;
+}
+
+.masseria-polaroid.tilt-2 {
+  --r: 2.6deg;
+  --x: 4px;
+  --y: 8px;
+}
+
+.masseria-polaroid.tilt-3 {
+  --r: -4.2deg;
+  --x: 10px;
+  --y: -4px;
+}
+
+.masseria-polaroid.tilt-4 {
+  --r: 3.8deg;
+  --x: -8px;
+  --y: -6px;
+}
+
+.masseria-polaroid.tilt-5 {
+  --r: -1.4deg;
+  --x: 8px;
+  --y: 12px;
+}
+
+.masseria-polaroid.tilt-6 {
+  --r: 5deg;
+  --x: -10px;
+  --y: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masseria-polaroid,
+  .masseria-hero-aurora {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .masseria-header-title {
+    display: none;
+  }
+
+  .masseria-title {
+    letter-spacing: 0.22em;
+  }
+
+  .masseria-polaroid {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.masseria-note {
+  padding: 0 0 90px;
+}
+
+.masseria-note-text {
+  text-align: center;
+  padding-top: 28px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: hsl(var(--eden-text-soft));
+}
+
 /* ═══════════════════════════════════════════════
    INTRO CINEMATOGRAFICA (5s)
 ═══════════════════════════════════════════════ */
